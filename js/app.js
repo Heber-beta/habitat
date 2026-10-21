@@ -121,14 +121,12 @@ function petGrid(current, act) {
   return '<div class="grid5">' + PET_ORDER.map((k) => '<button class="pet-tile' + (k === current ? ' on' : '') + '" data-act="' + act + '" data-k="' + k + '" aria-label="' + PETS[k].label + '" aria-pressed="' + (k === current) + '">' +
     tileImg(k) + '</button>').join('') + '</div>';
 }
-// Miniatura cuadrada del hogar pintado, encuadrada en la mascota.
+// Miniatura cuadrada: el hogar (sin la mascota) de fondo y la mascota sentada encima.
 function tileImg(k) {
   const p = petPose(k);
-  const side = Math.min(SCENE_W, p.h * 1.5);
-  const cx = Math.max(side / 2, Math.min(SCENE_W - side / 2, p.fx));
-  const cy = Math.max(side / 2, Math.min(SCENE_H - side / 2, p.fy - p.h / 2));
-  const pc = (v) => (v / side * 100).toFixed(2) + '%';
-  return '<img class="home" src="' + scene('casa', k) + '" alt="" style="width:' + pc(SCENE_W) + ';left:' + pc(side / 2 - cx) + ';top:' + pc(side / 2 - cy) + '">';
+  const pos = (p.fx / SCENE_W * 100).toFixed(1) + '% ' + ((p.fy - p.h * 0.4) / SCENE_H * 100).toFixed(1) + '%';
+  return '<img class="home" src="' + homeEmpty(k) + '" alt="" style="object-position:' + pos + '">' +
+    '<img class="mini" src="' + petImg(k) + '" alt="">';
 }
 function changePet(k) {
   const s = S();
