@@ -9,7 +9,8 @@ Una pose que falta se salta (la animación usa la sentada en su lugar).
 
 - De los cuadros _blink y _happy solo se toma la cara (donde cambian los ojos y la boca),
   así el cuerpo es idéntico y al cambiar de cuadro solo se mueve la cara.
-- Todas las poses quedan a la misma escala del animal (RATIO = alto de la pose / alto sentado).
+- Todas las poses quedan a la misma escala del animal (RATIO = alto de la pose / alto sentado;
+  si viene <mascota>_ratio.json de tools/split_sheet.py, se usan las alturas medidas en la hoja).
 - Se tiñe con la luz del hogar donde vive (anim/pose.json) y se le agrega una luz de borde,
   para que se vea dentro de la escena y no pegada encima.
 - img/pets/<mascota>.png es la pose sentada, para miniaturas.
@@ -78,6 +79,10 @@ def main(src, only):
         scene = Image.open(os.path.join(ROOT, 'img', 'fondos', 'casa_' + k + '.jpg'))
         amb = ambient(scene, pose[k]['fx'], pose[k]['fy'])
         ratio = dict(RATIO, **RATIO_PET.get(k, {}))
+        rp = os.path.join(src, k + '_ratio.json')   # alturas medidas en la hoja de poses (split_sheet.py)
+        if os.path.exists(rp):
+            with open(rp) as f:
+                ratio.update(json.load(f))
         made = []
         for p in POSES:
             path = os.path.join(src, k + '_' + p + '.png')
