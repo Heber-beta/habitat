@@ -8,6 +8,7 @@ Publicada en https://heber-beta.github.io/habitat/
 - `js/pet.js`: mascota animada con Lottie (`js/vendor/lottie_light.min.js`).
 - `anim/<mascota>.json`: animaciones Lottie generadas con `python3 tools/make_lottie.py` (estados: idle, hop, celebrate, spin, sleep, stretch, wiggle, stand, lie).
 - `js/sound.js`: sonidos con Web Audio (voz de cada mascota, marcar, celebrar, crecer, campana del modo foco).
+- `js/cloud.js`: sincroniza entre dispositivos con Supabase (mismo proyecto y cuenta del macrociclo). Tabla en `supabase.sql`; los datos de cada dispositivo se mezclan (marcas por día, borrados con marca de tiempo).
 - `js/remind.js`: recordatorios. Arma un `.ics` con un evento semanal y alerta por hábito (el calendario del teléfono avisa con la app cerrada) y avisa dentro de la app a la hora de cada hábito.
 - `img/fondos/`: los 40 escenarios pintados en resolución original (944×1680), con la mascota dentro. `casa_<mascota>.jpg` es el hogar sin la mascota (fondo de la animación) y `hogar_<mascota>.jpg` el hogar completo.
 - `img/pets/`: cada mascota recortada de su hogar, en la misma posición en que está pintada (`anim/pose.json`).
