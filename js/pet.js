@@ -198,6 +198,6 @@ export function scene(place, k) { return 'img/fondos/' + (place === 'casa' ? 'ho
 export function homeEmpty(k) { return 'img/fondos/casa_' + k + '.jpg'; }
 export { PETS };
 export function petMeta(k) { return (META && META[k]) || { petHeight: 236, petWidth: 236 }; }
-// Dónde está la mascota dentro de su hogar pintado (px de la imagen de 944x1680).
+// Dónde se para la mascota en su hogar: pies (fx, fy) y alto (h), en px de la imagen de 944x1680.
 export const SCENE_W = 944, SCENE_H = 1680;
-export function petPose(k) { return (META && META[k] && META[k].pose) || { x: 300, y: 700, w: 340, h: 400 }; }
+export function petPose(k) { return (META && META[k] && META[k].pose) || { fx: 472, fy: 1200, h: 380 }; }

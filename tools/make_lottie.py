@@ -244,6 +244,38 @@ def build(name):
     for k in range(3):
         layers.append(z_layer(ind, a, b, 252 + k * 8, 170 + k * 40, k * 40)); ind += 1
 
+    # caras: parpadeo (ojos cerrados) y alegría, encima de la mascota y pegadas a ella
+    pet_ind = ind + 2
+    assets = [{'id': 'pet', 'w': iw, 'h': ih, 'u': '../img/pets/', 'p': name + '.png', 'e': 0}]
+    faces = {}
+    for face in ('blink', 'happy'):
+        if os.path.exists(os.path.join(ROOT, 'img', 'pets', name + '_' + face + '.png')):
+            assets.append({'id': face, 'w': iw, 'h': ih, 'u': '../img/pets/', 'p': name + '_' + face + '.png', 'e': 0})
+            faces[face] = []
+    if 'blink' in faces:
+        a, b = SEG['idle']
+        faces['blink'] += [(a + 96, 100), (a + 103, 0), (a + 128, 100), (a + 133, 0)]   # parpadeo doble
+        a, b = SEG['sleep']
+        faces['blink'] += [(a, 100), (b + 1, 0)]                                          # duerme con los ojos cerrados
+        a, b = SEG['stretch']
+        faces['blink'] += [(a, 100), (a + 30, 0)]
+        a, b = SEG['wiggle']
+        faces['blink'] += [(a + 20, 100), (a + 26, 0)]
+    if 'happy' in faces:
+        for seg in ('hop', 'celebrate', 'spin'):
+            a, b = SEG[seg]
+            faces['happy'] += [(a + 4, 100), (b - 2, 0)]
+    for face in ('happy', 'blink'):
+        if face not in faces:
+            continue
+        keys = [(0, 0)] + sorted(faces[face])
+        op_k = {'a': 1, 'k': [{'t': t, 's': [v], 'h': 1} for t, v in keys]}
+        layers.append({
+            'ddd': 0, 'ind': ind, 'ty': 2, 'nm': face, 'refId': face, 'sr': 1, 'ao': 0, 'parent': pet_ind,
+            'ks': transform(o=op_k), 'ip': 0, 'op': OP, 'st': 0, 'bm': 0,
+        }); ind += 1
+    ind = pet_ind
+
     # la mascota
     layers.append({
         'ddd': 0, 'ind': ind, 'ty': 2, 'nm': name, 'refId': 'pet', 'sr': 1, 'ao': 0,
@@ -264,13 +296,13 @@ def build(name):
         shs += [(a + t, [v, v, 100]) for t, v in keys]
     shs.sort(key=lambda k: k[0])
     shadow_ks = transform(p=static([200, GROUND + 2, 0]), s=anim(shs), o=static(55 if floater else 100))
-    # (la escena ya trae su sombra pintada; esta solo se nota cuando salta)
+    # sombra de contacto con el suelo
     if not floater:
-        layers.append(shape_layer(ind, 'sombra', [{'ty': 'el', 'p': static([0, 0]), 's': static([sw, 18])}, fill('#263A2E', 14)], shadow_ks, 0, OP))
+        layers.append(shape_layer(ind, 'sombra', [{'ty': 'el', 'p': static([0, 0]), 's': static([sw, 18])}, fill('#263A2E', 30)], shadow_ks, 0, OP))
 
     return {
         'v': '5.12.2', 'fr': FPS, 'ip': 0, 'op': OP, 'w': W, 'h': H, 'nm': 'Hábitat ' + name, 'ddd': 0,
-        'assets': [{'id': 'pet', 'w': iw, 'h': ih, 'u': '../img/pets/', 'p': name + '.png', 'e': 0}],
+        'assets': assets,
         'layers': layers,
         'markers': [{'tm': a, 'cm': k, 'dr': b - a} for k, (a, b) in SEG.items()],
         'meta': {'petHeight': round(ih * sc / 100, 1), 'petWidth': round(iw * sc / 100, 1), 'ground': gy, 'floater': floater},
@@ -278,7 +310,7 @@ def build(name):
 
 
 def main():
-    names = sorted(f[:-4] for f in os.listdir(os.path.join(ROOT, 'img', 'pets')) if f.endswith('.png'))
+    names = sorted(f[:-4] for f in os.listdir(os.path.join(ROOT, 'img', 'pets')) if f.endswith('.png') and '_' not in f)
     meta = {}
     with open(os.path.join(ROOT, 'anim', 'pose.json')) as f:
         pose = json.load(f)

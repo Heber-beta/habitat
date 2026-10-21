@@ -102,20 +102,18 @@ function mountPet(slot, opts) {
   place();
   return p;
 }
-// Ubica el hogar y la mascota justo donde estaba pintada: en reposo la escena se ve
-// idéntica a la ilustración, y al moverse queda el hogar vacío detrás.
+// Ubica el hogar y a la mascota parada en su lugar del dibujo (pose.json: pies y alto,
+// en px de la imagen de 944x1680), dejando ver harto paisaje alrededor.
 function placeInHero(hero, opts) {
   const p = petPose(S().pet.k);
   const img = hero.querySelector('img.scene');
   const W = hero.clientWidth, H = hero.clientHeight;
   const sc = W / SCENE_W;
-  const feet = p.y + p.h;
-  let top = feet - (H - (opts.feetFromBottom || 66)) / sc;
-  const room = (opts.headRoom || 64) / sc;
-  if (p.y - top < room) top = p.y - room;
+  const below = opts.below || 0.26;
+  let top = p.fy - H * (1 - below) / sc;
   top = Math.max(0, Math.min(top, SCENE_H - H / sc));
   img.style.top = (-top * sc) + 'px';
-  pet.place({ height: p.h * sc * (opts.scale || 1), x: (p.x + p.w / 2) * sc, bottom: H - (feet - top) * sc });
+  pet.place({ height: p.h * sc * (opts.scale || 1), x: p.fx * sc, bottom: H - (p.fy - top) * sc });
 }
 
 // Mascotas en miniatura, cada una dentro de su propio hogar pintado.
@@ -126,9 +124,9 @@ function petGrid(current, act) {
 // Miniatura cuadrada del hogar pintado, encuadrada en la mascota.
 function tileImg(k) {
   const p = petPose(k);
-  const side = Math.min(SCENE_W, Math.max(p.w, p.h) * 1.18);
-  const cx = Math.max(side / 2, Math.min(SCENE_W - side / 2, p.x + p.w / 2));
-  const cy = Math.max(side / 2, Math.min(SCENE_H - side / 2, p.y + p.h / 2));
+  const side = Math.min(SCENE_W, p.h * 1.5);
+  const cx = Math.max(side / 2, Math.min(SCENE_W - side / 2, p.fx));
+  const cy = Math.max(side / 2, Math.min(SCENE_H - side / 2, p.fy - p.h / 2));
   const pc = (v) => (v / side * 100).toFixed(2) + '%';
   return '<img class="home" src="' + scene('casa', k) + '" alt="" style="width:' + pc(SCENE_W) + ';left:' + pc(side / 2 - cx) + ';top:' + pc(side / 2 - cy) + '">';
 }
@@ -206,7 +204,7 @@ function screenInicio() {
 function afterInicio() {
   const hero = app.querySelector('[data-hero]');
   const st = store.stage();
-  mountPet(hero, { hero: true, feetFromBottom: 76, headRoom: 86, scale: st.scale, special: st.special });
+  mountPet(hero, { hero: true, below: 0.3, scale: st.scale, special: st.special });
 }
 
 // ---------- Rescate
@@ -374,7 +372,7 @@ function screenMascota() {
 }
 function afterMascota() {
   const st = store.stage();
-  mountPet(app.querySelector('[data-hero]'), { hero: true, feetFromBottom: 24, headRoom: 24, scale: st.scale, special: st.special });
+  mountPet(app.querySelector('[data-hero]'), { hero: true, scale: st.scale, special: st.special });
 }
 
 // ---------- Yo
@@ -496,7 +494,7 @@ function afterBienvenida() {
     const ob = ui.ob;
     const s = S();
     s.pet.k = ob.k; s.pet.name = ob.petName || PETS[ob.k].name;
-    mountPet(hero, { hero: true, feetFromBottom: 24, headRoom: 24 });
+    mountPet(hero, { hero: true });
   }
 }
 
