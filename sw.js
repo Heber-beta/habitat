@@ -1,5 +1,5 @@
 // Service worker de Hábitat: guarda la app para que abra sin internet.
-const VERSION = 'habitat-v5';
+const VERSION = 'habitat-v6';
 const CORE = [
   './',
   'index.html',
@@ -9,6 +9,8 @@ const CORE = [
   'js/data.js',
   'js/store.js',
   'js/pet.js',
+  'js/sound.js',
+  'js/remind.js',
   'js/vendor/lottie_light.min.js',
   'anim/meta.json',
   'icons/icon-192.png',

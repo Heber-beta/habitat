@@ -2,6 +2,7 @@
 // estados (idle, hop, celebrate, spin, sleep, stretch, wiggle, stand, lie) como marcadores.
 // Las mascotas con poses cambian solas entre sentada (idle), de pie (stand) y acostada (lie).
 import { PETS, PHRASES } from './data.js';
+import { voice, play as sfx } from './sound.js';
 
 const LOOPS = { idle: true, sleep: true, stand: true, lie: true };
 const RESTS = ['idle', 'stand', 'lie'];
@@ -140,6 +141,7 @@ export class Pet {
       this.sleeping = false;
       this.rest = this.poses.includes('stand') ? 'stand' : 'idle';
       this.play('stretch', true);
+      voice(this.kind, 'sleepy');
       this.say(PHRASES.wake);
       return;
     }
@@ -149,11 +151,13 @@ export class Pet {
     if (this.taps >= 5) {
       this.taps = 0;
       this.play('spin', true);
+      voice(this.kind, 'happy');
       this.say(PHRASES.spin);
       this.buzz(30);
       return;
     }
     this.play('hop', true);
+    voice(this.kind, 'tap');
     if (this.taps === 1) this.say(PHRASES.tap[Math.floor(Math.random() * PHRASES.tap.length)].replace('¡Hola!', '¡Hola' + (this.userName ? ', ' + this.userName : '') + '!'));
   }
 
@@ -162,6 +166,8 @@ export class Pet {
     this.last = Date.now();
     this.play('celebrate', true);
     this.buzz(40);
+    sfx('celebrate');
+    setTimeout(() => voice(this.kind, 'happy'), 380);
     if (text) this.say(text, 3200);
   }
 

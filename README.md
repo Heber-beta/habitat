@@ -7,6 +7,8 @@ Publicada en https://heber-beta.github.io/habitat/
 - `js/store.js`: datos guardados en el teléfono (localStorage), rachas con comodines, crecimiento de la mascota y patrones.
 - `js/pet.js`: mascota animada con Lottie (`js/vendor/lottie_light.min.js`).
 - `anim/<mascota>.json`: animaciones Lottie generadas con `python3 tools/make_lottie.py` (estados: idle, hop, celebrate, spin, sleep, stretch, wiggle, stand, lie).
+- `js/sound.js`: sonidos con Web Audio (voz de cada mascota, marcar, celebrar, crecer, campana del modo foco).
+- `js/remind.js`: recordatorios. Arma un `.ics` con un evento semanal y alerta por hábito (el calendario del teléfono avisa con la app cerrada) y avisa dentro de la app a la hora de cada hábito.
 - `img/fondos/`: los 40 escenarios pintados en resolución original (944×1680), con la mascota dentro. `casa_<mascota>.jpg` es el hogar sin la mascota (fondo de la animación) y `hogar_<mascota>.jpg` el hogar completo.
 - `img/pets/`: cada mascota recortada de su hogar, en la misma posición en que está pintada (`anim/pose.json`).
 - `tools/split_sheet.py` y `tools/build_mascots.py`: cada mascota sale de una hoja de poses de Canva (2x2: sentada, de pie, acostada, en bolita, más versiones con ojos cerrados y cara feliz). `split_sheet.py <carpeta> <mascota>` corta la hoja y mide la escala de cada pose; `build_mascots.py <carpeta>` las tiñe con la luz del hogar y deja `img/pets/<mascota>_<pose>.png`. La ubicación en el hogar está en `anim/pose.json` (fx, fy = pies; h = alto sentado).

@@ -28,11 +28,12 @@ export const LEVELS = {
   epic: { label: 'Épica', hint: 'Fuiste más allá (+1 comodín)', color: '#2F6B4F' }
 };
 
+// Etapas de la mascota: crece con los días activos y su hogar se va decorando.
 export const STAGES = [
-  { from: 0, label: 'Cría', scale: 0.82 },
-  { from: 21, label: 'Joven', scale: 0.92 },
-  { from: 45, label: 'Adulto', scale: 1 },
-  { from: 66, label: 'Forma especial', scale: 1.05 }
+  { from: 0, label: 'Cría', scale: 0.78, gift: 'Recién llegada a su hogar' },
+  { from: 21, label: 'Joven', scale: 0.9, gift: 'Banderines de colores en su hogar' },
+  { from: 45, label: 'Adulto', scale: 1, gift: 'Luces cálidas que se encienden' },
+  { from: 66, label: 'Forma especial', scale: 1.06, gift: 'Aura dorada y destellos' }
 ];
 
 export const FEELINGS = [
@@ -67,5 +68,9 @@ export const PHRASES = {
   missed: 'Te extrañé. ¿Hacemos la versión mínima?',
   allDone: '¡Día completo! Qué orgullo',
   rescueStart: 'Aquí estoy, tú puedes',
-  rescueDone: '¡Lo lograste! +1 comodín'
+  rescueDone: '¡Lo lograste! +1 comodín',
+  due: ['¡Es hora de {h}!', 'Ya toca: {h}. ¿Partimos?', '{h}: solo la versión mínima y listo'],
+  grow: '¡Mira, crecí! Gracias a ti',
+  focusStart: 'Me quedo contigo. Tú puedes',
+  focusDone: '¡Bloque terminado! Qué foco'
 };
