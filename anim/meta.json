@@ -1,0 +1,62 @@
+{
+ "axolote": {
+  "petHeight": 163.6,
+  "petWidth": 300.0,
+  "ground": 362,
+  "floater": true
+ },
+ "ballena": {
+  "petHeight": 201.2,
+  "petWidth": 300.0,
+  "ground": 362,
+  "floater": true
+ },
+ "buho": {
+  "petHeight": 236.0,
+  "petWidth": 177.9,
+  "ground": 362,
+  "floater": false
+ },
+ "capibara": {
+  "petHeight": 236.0,
+  "petWidth": 168.2,
+  "ground": 362,
+  "floater": false
+ },
+ "conejo": {
+  "petHeight": 236.0,
+  "petWidth": 188.2,
+  "ground": 362,
+  "floater": false
+ },
+ "dinosaurio": {
+  "petHeight": 236.0,
+  "petWidth": 230.4,
+  "ground": 362,
+  "floater": false
+ },
+ "gato": {
+  "petHeight": 236.0,
+  "petWidth": 272.1,
+  "ground": 362,
+  "floater": false
+ },
+ "panda": {
+  "petHeight": 236.0,
+  "petWidth": 154.2,
+  "ground": 362,
+  "floater": false
+ },
+ "perro": {
+  "petHeight": 236.0,
+  "petWidth": 143.9,
+  "ground": 362,
+  "floater": false
+ },
+ "zorro": {
+  "petHeight": 236.0,
+  "petWidth": 177.0,
+  "ground": 362,
+  "floater": false
+ }
+}
