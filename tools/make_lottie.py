@@ -2,7 +2,8 @@
 
 Cada archivo trae todos los estados en una sola línea de tiempo, separados por
 marcadores: idle, hop, celebrate, spin, sleep, stretch, wiggle.
-La mascota es la ilustración pintada (img/pets/<mascota>.png) y encima van
+La mascota es el recorte de su hogar pintado (img/pets/<mascota>.png, lo arma
+tools/build_scenes.py) y encima van
 capas vectoriales: sombra, corazones, confeti y "Z" para dormir.
 
 Uso: python3 tools/make_lottie.py
@@ -263,23 +264,27 @@ def build(name):
         shs += [(a + t, [v, v, 100]) for t, v in keys]
     shs.sort(key=lambda k: k[0])
     shadow_ks = transform(p=static([200, GROUND + 2, 0]), s=anim(shs), o=static(55 if floater else 100))
-    layers.append(shape_layer(ind, 'sombra', [{'ty': 'el', 'p': static([0, 0]), 's': static([sw, 18 if not floater else 12])}, fill('#263A2E', 26)], shadow_ks, 0, OP))
+    # (la escena ya trae su sombra pintada; esta solo se nota cuando salta)
+    if not floater:
+        layers.append(shape_layer(ind, 'sombra', [{'ty': 'el', 'p': static([0, 0]), 's': static([sw, 18])}, fill('#263A2E', 14)], shadow_ks, 0, OP))
 
     return {
         'v': '5.12.2', 'fr': FPS, 'ip': 0, 'op': OP, 'w': W, 'h': H, 'nm': 'Hábitat ' + name, 'ddd': 0,
         'assets': [{'id': 'pet', 'w': iw, 'h': ih, 'u': '../img/pets/', 'p': name + '.png', 'e': 0}],
         'layers': layers,
         'markers': [{'tm': a, 'cm': k, 'dr': b - a} for k, (a, b) in SEG.items()],
-        'meta': {'petHeight': round(ih * sc / 100, 1), 'petWidth': round(iw * sc / 100, 1), 'ground': GROUND, 'floater': floater},
+        'meta': {'petHeight': round(ih * sc / 100, 1), 'petWidth': round(iw * sc / 100, 1), 'ground': gy, 'floater': floater},
     }
 
 
 def main():
     names = sorted(f[:-4] for f in os.listdir(os.path.join(ROOT, 'img', 'pets')) if f.endswith('.png'))
     meta = {}
+    with open(os.path.join(ROOT, 'anim', 'pose.json')) as f:
+        pose = json.load(f)
     for n in names:
         data = build(n)
-        meta[n] = data['meta']
+        meta[n] = dict(data['meta'], pose=pose[n])
         with open(os.path.join(ROOT, 'anim', n + '.json'), 'w') as f:
             json.dump(data, f, separators=(',', ':'))
     with open(os.path.join(ROOT, 'anim', 'meta.json'), 'w') as f:

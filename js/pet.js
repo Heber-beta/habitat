@@ -73,7 +73,7 @@ export class Pet {
     st.width = size + 'px';
     st.height = size + 'px';
     st.left = (x - size / 2) + 'px';
-    st.bottom = (bottom - size * 38 / 400) + 'px';
+    st.bottom = (bottom - size * (400 - (m.ground || 362)) / 400) + 'px';
   }
 
   static ready() { return metaReady; }
@@ -108,7 +108,8 @@ export class Pet {
       let dx = 0;
       if (r.left < left) dx = left - r.left;
       else if (r.right > right) dx = right - r.right;
-      const top = Math.max(box.top, 0) + 6;
+      const hello = scope && scope.querySelector('.hello');
+      const top = hello ? hello.getBoundingClientRect().bottom + 4 : Math.max(box.top, 0) + 6;
       bs.setProperty('--dx', Math.round(dx) + 'px');
       bs.setProperty('--dy', r.top < top ? Math.round(top - r.top) + 'px' : '0px');
     }
@@ -191,6 +192,12 @@ export class Pet {
 }
 
 export function petImg(k) { return 'img/pets/' + k + '.png'; }
-export function scene(place, k) { return 'img/fondos/' + place + '_' + k + '.jpg'; }
+// Escena completa (la mascota viene pintada dentro). El hogar se guarda como hogar_<mascota>.
+export function scene(place, k) { return 'img/fondos/' + (place === 'casa' ? 'hogar' : place) + '_' + k + '.jpg'; }
+// El hogar sin la mascota: el fondo sobre el que se anima.
+export function homeEmpty(k) { return 'img/fondos/casa_' + k + '.jpg'; }
 export { PETS };
 export function petMeta(k) { return (META && META[k]) || { petHeight: 236, petWidth: 236 }; }
+// Dónde está la mascota dentro de su hogar pintado (px de la imagen de 944x1680).
+export const SCENE_W = 944, SCENE_H = 1680;
+export function petPose(k) { return (META && META[k] && META[k].pose) || { x: 300, y: 700, w: 340, h: 400 }; }

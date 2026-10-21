@@ -76,7 +76,7 @@ textarea.input { resize: vertical; line-height: 1.5; font-weight: 600; }
 .input:focus { border-color: var(--pradera); outline: none; }
 
 /* ---------- Héroe con el hogar de la mascota */
-.hero { position: relative; height: 360px; overflow: hidden; border-radius: 0 0 32px 32px; background: var(--cielo); box-shadow: 0 8px 24px rgba(38,58,46,.25); }
+.hero { position: relative; height: 470px; overflow: hidden; border-radius: 0 0 32px 32px; background: var(--cielo); box-shadow: 0 8px 24px rgba(38,58,46,.25); }
 .hero > img.scene { position: absolute; left: 0; width: 100%; height: auto; }
 .hero .shade { position: absolute; left: 0; right: 0; top: 0; height: 130px; background: linear-gradient(180deg, rgba(24,44,34,.55), rgba(24,44,34,0)); pointer-events: none; }
 .hero .hello { position: absolute; left: 16px; right: 16px; top: calc(14px + var(--safe-t)); display: flex; align-items: center; justify-content: space-between; z-index: 4; }
@@ -90,7 +90,7 @@ textarea.input { resize: vertical; line-height: 1.5; font-weight: 600; }
 /* ---------- Mascota */
 .pet { position: absolute; z-index: 3; padding: 0; margin: 0; border: none; background: none; touch-action: manipulation; }
 .pet .pet-flip { position: absolute; inset: 0; transition: transform .35s ease; display: block; }
-.pet .pet-anim { position: absolute; inset: 0; display: block; filter: drop-shadow(0 2px 2px rgba(38,58,46,.2)); }
+.pet .pet-anim { position: absolute; inset: 0; display: block; }
 .pet .pet-anim svg { display: block; }
 .pet-bubble { position: absolute; left: 50%; top: 4%; transform: translate(-50%, -100%); background: #fff; color: var(--tinta); border-radius: 16px; padding: 8px 12px; font-size: 13px; font-weight: 800; white-space: nowrap; box-shadow: 0 4px 12px rgba(38,58,46,.2); pointer-events: none; z-index: 5; max-width: 260px; }
 .pet-bubble::after { content: ''; position: absolute; left: 50%; bottom: -6px; width: 12px; height: 12px; background: #fff; transform: translateX(-50%) rotate(45deg); }
@@ -164,11 +164,10 @@ textarea.input { resize: vertical; line-height: 1.5; font-weight: 600; }
 
 /* ---------- v1.1 */
 .pet-tile { position: relative; overflow: hidden; padding: 0; height: auto; aspect-ratio: 1; }
-.pet-tile img.home { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 62%; filter: saturate(1.1); }
-.pet-tile img.who { position: absolute; left: 50%; bottom: 10%; transform: translateX(-50%); max-height: 70%; max-width: 86%; filter: drop-shadow(0 3px 2px rgba(20,40,30,.35)); }
+.pet-tile img.home { position: absolute; max-width: none; max-height: none; height: auto; }
 .pet-tile::after { content: ''; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 -18px 20px -14px rgba(20,40,30,.35); pointer-events: none; }
 .pet-tile.on { border: 3px solid var(--bosque); box-shadow: 0 0 0 3px rgba(127,176,105,.45); }
-.places .place img { height: auto; aspect-ratio: 3 / 4; object-position: 50% 55%; }
+.places .place img { height: auto; aspect-ratio: 9 / 16; object-position: 50% 50%; }
 .scene-pick { position: relative; padding: 0; border: 3px solid transparent; border-radius: 16px; overflow: hidden; background: #fff; aspect-ratio: 3 / 4; }
 .scene-pick img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 58%; }
 .scene-pick span { position: absolute; left: 0; right: 0; bottom: 0; padding: 14px 4px 6px; font-size: 11px; font-weight: 800; color: #fff; text-align: center; line-height: 1.15; background: linear-gradient(180deg, rgba(20,40,30,0), rgba(20,40,30,.75)); }

@@ -1,18 +1,17 @@
 // Datos fijos de la app: mascotas, áreas, emociones del rescate y textos.
 
-// fx, fy: dónde pisa la mascota en la ilustración de su hogar (en píxeles de la
-// imagen original de 338 de ancho). h: alto de la mascota en una pantalla de 390.
+// Dónde está cada mascota dentro de su hogar pintado viene en anim/meta.json (pose).
 export const PETS = {
-  zorro: { label: 'Zorro', name: 'Miso', h: 150, fx: 120, fy: 400, desc: 'Astuto y juguetón. Encuentra atajos para empezar y celebra con saltos.' },
-  gato: { label: 'Gato', name: 'Nube', h: 104, fx: 180, fy: 330, desc: 'Tranquilo y curioso. Se acomoda en tus apuntes y ronronea en el modo enfoque.' },
-  perro: { label: 'Perro', name: 'Toby', h: 145, fx: 150, fy: 470, desc: 'Leal y con energía. Mueve la cola cada vez que cumples y te espera en la puerta.' },
-  ballena: { label: 'Ballena', name: 'Azul', h: 110, fx: 170, fy: 260, desc: 'Grande y serena. Flota a tu lado y su mar se llena de vida con cada hábito.' },
-  axolote: { label: 'Axolote', name: 'Rosi', h: 72, fx: 115, fy: 430, desc: 'Siempre sonriente y experto en regenerarse: perfecto para volver después de un mal día.' },
-  dinosaurio: { label: 'Dinosaurio', name: 'Rex', h: 150, fx: 175, fy: 480, desc: 'Fuerte y un poco torpe. Ideal para entrenar: levanta pesas contigo.' },
-  panda: { label: 'Panda rojo', name: 'Momo', h: 150, fx: 180, fy: 390, desc: 'Calmado y comilón. Te recuerda que la versión mínima también cuenta.' },
-  capibara: { label: 'Capibara', name: 'Yuzu', h: 135, fx: 165, fy: 420, desc: 'El más relajado. Baja la ansiedad antes de partir y se lleva bien con todos.' },
-  buho: { label: 'Búho', name: 'Sabio', h: 112, fx: 200, fy: 400, desc: 'Sabio y nocturno. Te acompaña a estudiar y a cerrar tus proyectos de noche.' },
-  conejo: { label: 'Conejo', name: 'Copo', h: 135, fx: 110, fy: 430, desc: 'Rápido y tierno. Perfecto para arrancar con pasos chiquititos.' }
+  zorro: { label: 'Zorro', name: 'Miso', desc: 'Astuto y juguetón. Encuentra atajos para empezar y celebra con saltos.' },
+  gato: { label: 'Gato', name: 'Nube', desc: 'Tranquilo y curioso. Se acomoda en tus apuntes y ronronea en el modo enfoque.' },
+  perro: { label: 'Perro', name: 'Toby', desc: 'Leal y con energía. Mueve la cola cada vez que cumples y te espera en la puerta.' },
+  ballena: { label: 'Ballena', name: 'Azul', desc: 'Grande y serena. Flota a tu lado y su mar se llena de vida con cada hábito.' },
+  axolote: { label: 'Axolote', name: 'Rosi', desc: 'Siempre sonriente y experto en regenerarse: perfecto para volver después de un mal día.' },
+  dinosaurio: { label: 'Dinosaurio', name: 'Rex', desc: 'Fuerte y un poco torpe. Ideal para entrenar: levanta pesas contigo.' },
+  panda: { label: 'Panda rojo', name: 'Momo', desc: 'Calmado y comilón. Te recuerda que la versión mínima también cuenta.' },
+  capibara: { label: 'Capibara', name: 'Yuzu', desc: 'El más relajado. Baja la ansiedad antes de partir y se lleva bien con todos.' },
+  buho: { label: 'Búho', name: 'Sabio', desc: 'Sabio y nocturno. Te acompaña a estudiar y a cerrar tus proyectos de noche.' },
+  conejo: { label: 'Conejo', name: 'Copo', desc: 'Rápido y tierno. Perfecto para arrancar con pasos chiquititos.' }
 };
 export const PET_ORDER = ['zorro', 'gato', 'perro', 'ballena', 'axolote', 'dinosaurio', 'panda', 'capibara', 'buho', 'conejo'];
 
