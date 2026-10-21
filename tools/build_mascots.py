@@ -1,34 +1,45 @@
-"""Prepara las mascotas estilo personaje (img/pets/<mascota>.png, _blink.png, _happy.png).
+"""Prepara las mascotas estilo personaje, con varias poses (img/pets/<mascota>_<pose>.png).
 
-Entrada (carpeta): <mascota>_open.png, <mascota>_blink.png, <mascota>_happy.png, recortes
-transparentes del mismo tamaño y encuadre (ojos abiertos, ojos cerrados, cara feliz).
+Entrada (carpeta): recortes transparentes de Canva, <mascota>_<pose>.png, con estas poses:
+  sit, sit_blink, sit_happy   sentado (ojos abiertos, parpadeo, cara feliz)
+  stand, stand_blink          de pie
+  lie, lie_blink              acostado
+  curl                        durmiendo en bolita
+Una pose que falta se salta (la animación usa la sentada en su lugar).
 
-- Solo se toma la cara de los cuadros de parpadeo y alegría, así el cuerpo es idéntico
-  y al cambiar de cuadro solo se mueven los ojos y la boca.
+- De los cuadros _blink y _happy solo se toma la cara (donde cambian los ojos y la boca),
+  así el cuerpo es idéntico y al cambiar de cuadro solo se mueve la cara.
+- Todas las poses quedan a la misma escala del animal (RATIO = alto de la pose / alto sentado).
 - Se tiñe con la luz del hogar donde vive (anim/pose.json) y se le agrega una luz de borde,
   para que se vea dentro de la escena y no pegada encima.
+- img/pets/<mascota>.png es la pose sentada, para miniaturas.
 
 Uso: python3 tools/build_mascots.py <carpeta> [mascota ...]   y después  python3 tools/make_lottie.py
 """
 import json
 import os
+import shutil
 import sys
 
 import numpy as np
 from PIL import Image, ImageFilter
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-OUT_H = 640   # alto del recorte final (px)
+OUT_H = 640   # alto de la pose sentada (px)
+POSES = ['sit', 'stand', 'lie', 'curl']
+FACES = ['blink', 'happy']
+RATIO = {'sit': 1, 'stand': 0.95, 'lie': 0.7, 'curl': 0.55}
+RATIO_PET = {}   # ajustes por mascota, p. ej. {'ballena': {'lie': 0.7}}
 
 
-def face_from(base, other, box):
+def face_from(base, other):
+    """Pega en base solo la zona donde el otro cuadro cambia de verdad (ojos, boca)."""
     a = np.asarray(base).astype(float)
     b = np.asarray(other).astype(float)
-    diff = (np.abs(a[..., :3] - b[..., :3]).sum(-1) > 45).astype(np.uint8) * 255
-    m = np.zeros_like(diff)
-    x0, y0, x1, y1 = box
-    m[y0:y1, x0:x1] = diff[y0:y1, x0:x1]
-    mask = Image.fromarray(m).filter(ImageFilter.MaxFilter(15)).filter(ImageFilter.GaussianBlur(6))
+    diff = ((np.abs(a[..., :3] - b[..., :3]).sum(-1) > 45) & (a[..., 3] > 128)).astype(np.uint8) * 255
+    # el ruido del pelaje es disperso; la cara cambia en manchas densas
+    dense = np.asarray(Image.fromarray(diff).filter(ImageFilter.GaussianBlur(10))) > 110
+    mask = Image.fromarray((dense * 255).astype(np.uint8)).filter(ImageFilter.MaxFilter(21)).filter(ImageFilter.GaussianBlur(7))
     return Image.composite(other, base, mask)
 
 
@@ -57,26 +68,36 @@ def grade(img, amb, k=0.22):
 def main(src, only):
     with open(os.path.join(ROOT, 'anim', 'pose.json')) as f:
         pose = json.load(f)
+    out = os.path.join(ROOT, 'img', 'pets')
     for k in only or sorted(pose):
-        path = os.path.join(src, k + '_open.png')
-        if not os.path.exists(path):
+        if not os.path.exists(os.path.join(src, k + '_sit.png')):
             continue
-        base = Image.open(path).convert('RGBA')
-        bbox = base.getbbox()
-        frames = {'': base}
-        for face, box in (('blink', 'eyes'), ('happy', 'face')):
-            p = os.path.join(src, k + '_' + face + '.png')
-            if os.path.exists(p):
-                fb = pose[k]['face']
-                x0, y0, x1, y1 = fb['eyes'] if box == 'eyes' else fb['face']
-                frames['_' + face] = face_from(base, Image.open(p).convert('RGBA'), (x0, y0, x1, y1))
+        for f in os.listdir(out):
+            if f.startswith(k + '_'):
+                os.remove(os.path.join(out, f))
         scene = Image.open(os.path.join(ROOT, 'img', 'fondos', 'casa_' + k + '.jpg'))
         amb = ambient(scene, pose[k]['fx'], pose[k]['fy'])
-        for suf, im in frames.items():
-            im = grade(im.crop(bbox), amb)
-            im = im.resize((round(im.width * OUT_H / im.height), OUT_H), Image.LANCZOS)
-            im.save(os.path.join(ROOT, 'img', 'pets', k + suf + '.png'), optimize=True)
-        print(k, 'ok', list(frames))
+        ratio = dict(RATIO, **RATIO_PET.get(k, {}))
+        made = []
+        for p in POSES:
+            path = os.path.join(src, k + '_' + p + '.png')
+            if not os.path.exists(path):
+                continue
+            base = Image.open(path).convert('RGBA')
+            bbox = base.getbbox()
+            frames = {'': base}
+            for face in FACES:
+                fp = os.path.join(src, k + '_' + p + '_' + face + '.png')
+                if os.path.exists(fp):
+                    frames['_' + face] = face_from(base, Image.open(fp).convert('RGBA'))
+            h = round(OUT_H * ratio[p])
+            for suf, im in frames.items():
+                im = grade(im.crop(bbox), amb)
+                im = im.resize((round(im.width * h / im.height), h), Image.LANCZOS)
+                im.save(os.path.join(out, k + '_' + p + suf + '.png'), optimize=True)
+                made.append(p + suf)
+        shutil.copy(os.path.join(out, k + '_sit.png'), os.path.join(out, k + '.png'))
+        print(k, 'ok', made)
 
 
 if __name__ == '__main__':

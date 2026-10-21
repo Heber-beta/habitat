@@ -4,6 +4,9 @@
   "petWidth": 300.0,
   "ground": 328,
   "floater": true,
+  "poses": [
+   "idle"
+  ],
   "pose": {
    "fx": 544,
    "fy": 1212,
@@ -15,6 +18,9 @@
   "petWidth": 300.0,
   "ground": 328,
   "floater": true,
+  "poses": [
+   "idle"
+  ],
   "pose": {
    "fx": 536,
    "fy": 884,
@@ -26,6 +32,9 @@
   "petWidth": 175.2,
   "ground": 362,
   "floater": false,
+  "poses": [
+   "idle"
+  ],
   "pose": {
    "fx": 576,
    "fy": 1153,
@@ -37,6 +46,9 @@
   "petWidth": 219.3,
   "ground": 362,
   "floater": false,
+  "poses": [
+   "idle"
+  ],
   "pose": {
    "fx": 417,
    "fy": 1213,
@@ -48,6 +60,9 @@
   "petWidth": 192.1,
   "ground": 362,
   "floater": false,
+  "poses": [
+   "idle"
+  ],
   "pose": {
    "fx": 566,
    "fy": 1149,
@@ -59,6 +74,9 @@
   "petWidth": 238.3,
   "ground": 362,
   "floater": false,
+  "poses": [
+   "idle"
+  ],
   "pose": {
    "fx": 587,
    "fy": 1322,
@@ -70,6 +88,9 @@
   "petWidth": 300.0,
   "ground": 362,
   "floater": false,
+  "poses": [
+   "idle"
+  ],
   "pose": {
    "fx": 529,
    "fy": 1072,
@@ -81,6 +102,9 @@
   "petWidth": 232.3,
   "ground": 362,
   "floater": false,
+  "poses": [
+   "idle"
+  ],
   "pose": {
    "fx": 526,
    "fy": 1122,
@@ -92,6 +116,9 @@
   "petWidth": 300.0,
   "ground": 362,
   "floater": false,
+  "poses": [
+   "idle"
+  ],
   "pose": {
    "fx": 487,
    "fy": 1411,
@@ -100,9 +127,14 @@
  },
  "zorro": {
   "petHeight": 236.0,
-  "petWidth": 188.1,
+  "petWidth": 150.1,
   "ground": 362,
   "floater": false,
+  "poses": [
+   "idle",
+   "stand",
+   "lie"
+  ],
   "pose": {
    "fx": 600,
    "fy": 1150,
