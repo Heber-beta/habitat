@@ -1,7 +1,7 @@
 // Hábitat: pantallas, navegación y acciones.
 import { PETS, PET_ORDER, AREAS, LEVELS, FEELINGS, DAY_SHORT, DAY_LONG, MONTHS, PHRASES, STAGES, HABIT_IDEAS } from './data.js';
 import * as store from './store.js';
-import { Pet, petImg, scene, petMeta } from './pet.js';
+import { Pet, petImg, scene, homeEmpty, petMeta, petPose, SCENE_W, SCENE_H } from './pet.js';
 
 const S = () => store.S;
 const app = document.getElementById('app');
@@ -102,24 +102,35 @@ function mountPet(slot, opts) {
   place();
   return p;
 }
-// Ubica el hogar pintado y la mascota de modo que pise el mismo lugar del dibujo.
+// Ubica el hogar y la mascota justo donde estaba pintada: en reposo la escena se ve
+// idéntica a la ilustración, y al moverse queda el hogar vacío detrás.
 function placeInHero(hero, opts) {
-  const k = S().pet.k, P = PETS[k];
+  const p = petPose(S().pet.k);
   const img = hero.querySelector('img.scene');
   const W = hero.clientWidth, H = hero.clientHeight;
-  const sc = W / 338;
-  const feet = H - (opts.feetFromBottom || 66);
-  let top = P.fy - feet / sc;
-  top = Math.max(0, Math.min(top, 600 - H / sc));
+  const sc = W / SCENE_W;
+  const feet = p.y + p.h;
+  let top = feet - (H - (opts.feetFromBottom || 66)) / sc;
+  const room = (opts.headRoom || 64) / sc;
+  if (p.y - top < room) top = p.y - room;
+  top = Math.max(0, Math.min(top, SCENE_H - H / sc));
   img.style.top = (-top * sc) + 'px';
-  const feetY = (P.fy - top) * sc;
-  pet.place({ height: P.h * (W / 390) * (opts.scale || 1), x: P.fx * sc, bottom: H - feetY });
+  pet.place({ height: p.h * sc * (opts.scale || 1), x: (p.x + p.w / 2) * sc, bottom: H - (feet - top) * sc });
 }
 
 // Mascotas en miniatura, cada una dentro de su propio hogar pintado.
 function petGrid(current, act) {
   return '<div class="grid5">' + PET_ORDER.map((k) => '<button class="pet-tile' + (k === current ? ' on' : '') + '" data-act="' + act + '" data-k="' + k + '" aria-label="' + PETS[k].label + '" aria-pressed="' + (k === current) + '">' +
-    '<img class="home" src="' + scene('casa', k) + '" alt=""><img class="who" src="' + petImg(k) + '" alt=""></button>').join('') + '</div>';
+    tileImg(k) + '</button>').join('') + '</div>';
+}
+// Miniatura cuadrada del hogar pintado, encuadrada en la mascota.
+function tileImg(k) {
+  const p = petPose(k);
+  const side = Math.min(SCENE_W, Math.max(p.w, p.h) * 1.18);
+  const cx = Math.max(side / 2, Math.min(SCENE_W - side / 2, p.x + p.w / 2));
+  const cy = Math.max(side / 2, Math.min(SCENE_H - side / 2, p.y + p.h / 2));
+  const pc = (v) => (v / side * 100).toFixed(2) + '%';
+  return '<img class="home" src="' + scene('casa', k) + '" alt="" style="width:' + pc(SCENE_W) + ';left:' + pc(side / 2 - cx) + ';top:' + pc(side / 2 - cy) + '">';
 }
 function changePet(k) {
   const s = S();
@@ -175,7 +186,7 @@ function screenInicio() {
   return backdrop('casa') +
     '<main class="screen">' +
     '<section class="hero" data-hero>' +
-    '<img class="scene" src="' + scene('casa', s.pet.k) + '" alt="Hogar de ' + esc(s.pet.name) + '">' +
+    '<img class="scene" src="' + homeEmpty(s.pet.k) + '" alt="Hogar de ' + esc(s.pet.name) + '">' +
     '<div class="shade"></div>' + fireflies() +
     '<div class="hello"><div class="who"><div class="small bold">' + todayLabel() + ' · ' + greeting() + '</div><h1 style="font-size:24px">Hola' + (s.user.name ? ', ' + esc(s.user.name) : '') + '</h1></div>' +
     '<div class="row" style="gap:6px"><span class="pill" title="Racha">' + I.flame + streak + '</span><span class="pill" title="Comodines">' + I.star + s.wildcards + '</span></div></div>' +
@@ -195,7 +206,7 @@ function screenInicio() {
 function afterInicio() {
   const hero = app.querySelector('[data-hero]');
   const st = store.stage();
-  mountPet(hero, { hero: true, scale: st.scale, special: st.special });
+  mountPet(hero, { hero: true, feetFromBottom: 76, headRoom: 86, scale: st.scale, special: st.special });
 }
 
 // ---------- Rescate
@@ -352,7 +363,7 @@ function screenMascota() {
   return backdrop('casa') +
     '<main class="screen"><div class="topbar"><div><h1>' + esc(s.pet.name) + '</h1><div class="muted">' + P.label + ' · ' + st.label + '</div></div></div>' +
     '<div class="pad stack">' +
-    '<section class="hero" data-hero style="height:250px;border-radius:26px"><img class="scene" src="' + scene('casa', s.pet.k) + '" alt="Hogar de ' + esc(s.pet.name) + '">' + fireflies() + '</section>' +
+    '<section class="hero" data-hero style="height:380px;border-radius:26px"><img class="scene" src="' + homeEmpty(s.pet.k) + '" alt="Hogar de ' + esc(s.pet.name) + '">' + fireflies() + '</section>' +
     '<div class="card stack" style="gap:8px"><div class="row between"><b>Crecimiento</b><span class="muted small">' + plural(st.days, 'día activo', 'días activos') + '</span></div><span class="bar"><i style="width:' + Math.round(st.prog * 100) + '%"></i></span><div class="muted small">' + nextTxt + ' Nunca muere: si te alejas, solo se cansa y te espera.</div>' +
     '<div class="grid4" style="text-align:center;margin-top:4px">' + STAGES.map((x) => '<div style="background:' + (x.label === st.label ? '#E3F0D8' : '#FFF6E5') + ';border-radius:12px;padding:6px 2px"><div class="small bold">' + x.label + '</div><div class="small muted">día ' + x.from + '</div></div>').join('') + '</div></div>' +
     '<div class="grid4 places">' + places.map(([p, l]) => '<div class="place"><img src="' + scene(p, s.pet.k) + '" alt="' + l + ' de ' + esc(s.pet.name) + '"><div>' + l + '</div></div>').join('') + '</div>' +
@@ -363,7 +374,7 @@ function screenMascota() {
 }
 function afterMascota() {
   const st = store.stage();
-  mountPet(app.querySelector('[data-hero]'), { hero: true, feetFromBottom: 30, scale: 0.85 * st.scale, special: st.special });
+  mountPet(app.querySelector('[data-hero]'), { hero: true, feetFromBottom: 24, headRoom: 24, scale: st.scale, special: st.special });
 }
 
 // ---------- Yo
@@ -447,7 +458,7 @@ function screenBienvenida() {
       '<input class="input" data-model="ob.name" value="' + esc(ob.name) + '" maxlength="24" placeholder="Tu nombre" autocomplete="given-name">' + next();
   } else if (ob.step === 2) {
     body = '<h1 style="font-size:26px">Elige tu compañero</h1><div class="muted" style="line-height:1.4">Crecerá contigo. Nunca muere: si te alejas, solo se cansa y te espera.</div>' +
-      '<section class="hero" data-hero style="height:230px;border-radius:26px"><img class="scene" src="' + scene('casa', ob.k) + '" alt="Hogar del ' + PETS[ob.k].label.toLowerCase() + '"></section>' +
+      '<section class="hero" data-hero style="height:330px;border-radius:26px"><img class="scene" src="' + homeEmpty(ob.k) + '" alt="Hogar del ' + PETS[ob.k].label.toLowerCase() + '"></section>' +
       '<div class="card" style="font-size:14px;line-height:1.45"><b>' + PETS[ob.k].label + ':</b> ' + PETS[ob.k].desc + '</div>' +
       petGrid(ob.k, 'ob-pet') +
       '<label class="field">¿Cómo se va a llamar?<input class="input" data-model="ob.petName" maxlength="16" value="' + esc(ob.petName) + '"></label>' + next('Este es');
@@ -485,7 +496,7 @@ function afterBienvenida() {
     const ob = ui.ob;
     const s = S();
     s.pet.k = ob.k; s.pet.name = ob.petName || PETS[ob.k].name;
-    mountPet(hero, { hero: true, feetFromBottom: 24, scale: 0.8 });
+    mountPet(hero, { hero: true, feetFromBottom: 24, headRoom: 24 });
   }
 }
 
