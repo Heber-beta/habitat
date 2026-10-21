@@ -1,122 +1,162 @@
 {
  "axolote": {
-  "petHeight": 165.6,
-  "petWidth": 300.0,
+  "petHeight": 236.0,
+  "petWidth": 227.5,
   "ground": 328,
   "floater": true,
+  "poses": [
+   "idle",
+   "stand",
+   "lie"
+  ],
   "pose": {
-   "x": 251,
-   "y": 888,
-   "w": 587,
-   "h": 324
+   "fx": 367,
+   "fy": 1230,
+   "h": 260
   }
  },
  "ballena": {
-  "petHeight": 212.1,
-  "petWidth": 300.0,
+  "petHeight": 236.0,
+  "petWidth": 168.2,
   "ground": 328,
   "floater": true,
+  "poses": [
+   "idle",
+   "stand",
+   "lie"
+  ],
   "pose": {
-   "x": 128,
-   "y": 307,
-   "w": 816,
-   "h": 577
+   "fx": 536,
+   "fy": 884,
+   "h": 400
   }
  },
  "buho": {
   "petHeight": 236.0,
-  "petWidth": 175.2,
+  "petWidth": 164.8,
   "ground": 362,
   "floater": false,
+  "poses": [
+   "idle",
+   "stand",
+   "lie"
+  ],
   "pose": {
-   "x": 370,
-   "y": 598,
-   "w": 412,
-   "h": 555
+   "fx": 497,
+   "fy": 1107,
+   "h": 320
   }
  },
  "capibara": {
   "petHeight": 236.0,
-  "petWidth": 219.3,
+  "petWidth": 130.2,
   "ground": 362,
   "floater": false,
+  "poses": [
+   "idle",
+   "stand",
+   "lie"
+  ],
   "pose": {
-   "x": 82,
-   "y": 492,
-   "w": 670,
-   "h": 721
+   "fx": 470,
+   "fy": 1250,
+   "h": 360
   }
  },
  "conejo": {
   "petHeight": 236.0,
-  "petWidth": 192.1,
+  "petWidth": 182.2,
   "ground": 362,
   "floater": false,
+  "poses": [
+   "idle",
+   "stand",
+   "lie"
+  ],
   "pose": {
-   "x": 350,
-   "y": 617,
-   "w": 433,
-   "h": 532
+   "fx": 520,
+   "fy": 1178,
+   "h": 330
   }
  },
  "dinosaurio": {
   "petHeight": 236.0,
-  "petWidth": 238.3,
+  "petWidth": 159.3,
   "ground": 362,
   "floater": false,
+  "poses": [
+   "idle",
+   "stand",
+   "lie"
+  ],
   "pose": {
-   "x": 230,
-   "y": 615,
-   "w": 714,
-   "h": 707
+   "fx": 473,
+   "fy": 1325,
+   "h": 420
   }
  },
  "gato": {
-  "petHeight": 227.3,
-  "petWidth": 300.0,
+  "petHeight": 236.0,
+  "petWidth": 123.2,
   "ground": 362,
   "floater": false,
+  "poses": [
+   "idle",
+   "stand",
+   "lie"
+  ],
   "pose": {
-   "x": 222,
-   "y": 606,
-   "w": 615,
-   "h": 466
+   "fx": 480,
+   "fy": 990,
+   "h": 370
   }
  },
  "panda": {
   "petHeight": 236.0,
-  "petWidth": 232.3,
+  "petWidth": 182.9,
   "ground": 362,
   "floater": false,
+  "poses": [
+   "idle",
+   "stand",
+   "lie"
+  ],
   "pose": {
-   "x": 243,
-   "y": 546,
-   "w": 567,
-   "h": 576
+   "fx": 544,
+   "fy": 1060,
+   "h": 330
   }
  },
  "perro": {
-  "petHeight": 146.3,
-  "petWidth": 300.0,
+  "petHeight": 236.0,
+  "petWidth": 138.7,
   "ground": 362,
   "floater": false,
+  "poses": [
+   "idle",
+   "stand",
+   "lie"
+  ],
   "pose": {
-   "x": 143,
-   "y": 1075,
-   "w": 689,
-   "h": 336
+   "fx": 430,
+   "fy": 1380,
+   "h": 360
   }
  },
  "zorro": {
   "petHeight": 236.0,
-  "petWidth": 229.8,
+  "petWidth": 150.1,
   "ground": 362,
   "floater": false,
+  "poses": [
+   "idle",
+   "stand",
+   "lie"
+  ],
   "pose": {
-   "x": 239,
-   "y": 573,
-   "w": 597,
-   "h": 613
+   "fx": 600,
+   "fy": 1150,
+   "h": 380
   }
  }
 }

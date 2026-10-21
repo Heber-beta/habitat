@@ -1,8 +1,10 @@
 // Mascota animada con Lottie. Un solo archivo por mascota trae todos los
-// estados (idle, hop, celebrate, spin, sleep, stretch, wiggle) como marcadores.
+// estados (idle, hop, celebrate, spin, sleep, stretch, wiggle, stand, lie) como marcadores.
+// Las mascotas con poses cambian solas entre sentada (idle), de pie (stand) y acostada (lie).
 import { PETS, PHRASES } from './data.js';
 
-const LOOPS = { idle: true, sleep: true };
+const LOOPS = { idle: true, sleep: true, stand: true, lie: true };
+const RESTS = ['idle', 'stand', 'lie'];
 const SLEEP_AFTER = 25000;
 const reduced = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 let META = null;
@@ -18,6 +20,7 @@ export class Pet {
     this.taps = 0;
     this.last = Date.now();
     this.current = null;
+    this.rest = 'idle';
 
     const el = document.createElement('button');
     el.type = 'button';
@@ -32,6 +35,12 @@ export class Pet {
 
     this.load(kind);
     this.timer = setInterval(() => this.tick(), 1000);
+  }
+
+  // Poses de descanso que trae esta mascota (meta.json puede llegar después que la animación).
+  get poses() {
+    if (!this.ready) return ['idle'];
+    return ((META && META[this.kind] && META[this.kind].poses) || ['idle']).filter((p) => this.segments[p]);
   }
 
   label() {
@@ -57,11 +66,12 @@ export class Pet {
         this.segments[m.payload && m.payload.name ? m.payload.name : m.comment] = [t, t + d];
       });
       this.ready = true;
-      this.play(this.sleeping ? 'sleep' : 'idle');
+      if (!this.poses.includes(this.rest)) this.rest = 'idle';
+      this.play(this.sleeping ? 'sleep' : this.rest);
     });
     this.anim.addEventListener('complete', () => {
       if (LOOPS[this.current]) this.play(this.current, true);
-      else this.play(this.sleeping ? 'sleep' : 'idle');
+      else this.play(this.sleeping ? 'sleep' : this.rest);
     });
   }
 
@@ -128,6 +138,7 @@ export class Pet {
     if (this.onTap) this.onTap();
     if (this.sleeping) {
       this.sleeping = false;
+      this.rest = this.poses.includes('stand') ? 'stand' : 'idle';
       this.play('stretch', true);
       this.say(PHRASES.wake);
       return;
@@ -165,14 +176,16 @@ export class Pet {
     const now = Date.now();
     if (this.sleeping) return;
     if (now - this.last > SLEEP_AFTER) { this.sleep(); return; }
-    if (this.current !== 'idle' || reduced()) return;
-    if (now - (this.idleAt || 0) > 4500 && Math.random() < 0.3) {
+    if (!RESTS.includes(this.current) || reduced()) return;
+    if (now - (this.idleAt || 0) > 5000 && Math.random() < 0.3) {
       this.idleAt = now;
       const r = Math.random();
-      if (r < 0.3) { this.flip = -this.flip; this.flipEl.style.transform = 'scaleX(' + this.flip + ')'; }
-      else if (r < 0.6) this.play('wiggle', true);
-      else if (r < 0.8) this.play('hop', true);
-      else this.play('stretch', true);
+      const other = this.poses.filter((p) => p !== this.rest);
+      // cambia de pose (se sienta, se para, se echa) la mitad de las veces
+      if (other.length && r < 0.5) { this.rest = other[Math.floor(Math.random() * other.length)]; this.play(this.rest, true); }
+      else if (r < 0.7) { this.flip = -this.flip; this.flipEl.style.transform = 'scaleX(' + this.flip + ')'; }
+      else if (r < 0.85 && this.rest === 'stand') this.play('wiggle', true);
+      else if (this.rest === 'idle') this.play('hop', true);
     }
   }
 
@@ -198,6 +211,6 @@ export function scene(place, k) { return 'img/fondos/' + (place === 'casa' ? 'ho
 export function homeEmpty(k) { return 'img/fondos/casa_' + k + '.jpg'; }
 export { PETS };
 export function petMeta(k) { return (META && META[k]) || { petHeight: 236, petWidth: 236 }; }
-// Dónde está la mascota dentro de su hogar pintado (px de la imagen de 944x1680).
+// Dónde se para la mascota en su hogar: pies (fx, fy) y alto (h), en px de la imagen de 944x1680.
 export const SCENE_W = 944, SCENE_H = 1680;
-export function petPose(k) { return (META && META[k] && META[k].pose) || { x: 300, y: 700, w: 340, h: 400 }; }
+export function petPose(k) { return (META && META[k] && META[k].pose) || { fx: 472, fy: 1200, h: 380 }; }
