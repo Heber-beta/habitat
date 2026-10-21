@@ -40,7 +40,11 @@ function blank() {
     wildcards: START_WILDCARDS,
     saved: {},          // días salvados con un comodín
     settledUntil: dayKey(),
-    lastOpen: dayKey()
+    lastOpen: dayKey(),
+    settings: { sound: true, remind: false },
+    focus: [],          // sesiones del modo foco: [{ at, min, habitId }]
+    stageSeen: null,    // última etapa de la mascota que ya celebramos
+    weekSeen: null      // lunes de la última semana cuyo resumen ya viste
   };
 }
 
@@ -161,10 +165,10 @@ export function activeDays() {
 
 export function stage() {
   const d = activeDays();
-  let st = STAGES[0], next = STAGES[1];
-  STAGES.forEach((s, i) => { if (d >= s.from) { st = s; next = STAGES[i + 1] || null; } });
+  let st = STAGES[0], next = STAGES[1], idx = 0;
+  STAGES.forEach((s, i) => { if (d >= s.from) { st = s; next = STAGES[i + 1] || null; idx = i; } });
   const prog = next ? (d - st.from) / (next.from - st.from) : 1;
-  return { days: d, label: st.label, scale: st.scale, next, prog, special: !next };
+  return { days: d, i: idx, label: st.label, scale: st.scale, gift: st.gift, next, prog, special: !next };
 }
 
 export function lastActive() {
@@ -234,4 +238,64 @@ export function patterns() {
   let topFeel = null;
   Object.keys(feel).forEach((f) => { if (!topFeel || feel[f] > feel[topFeel]) topFeel = f; });
   return { byDay, best: best === null ? null : Number(best), sched, done, mins, rescues, rescued, topFeel, enough: sched >= 5 };
+}
+
+// ---------- resumen semanal (semanas de lunes a domingo)
+
+export function weekStart(k = dayKey()) {
+  return addDays(k, -((parseDay(k).getDay() + 6) % 7));
+}
+
+function weekStats(start) {
+  const today = dayKey();
+  const days = [];
+  const per = {};
+  let sched = 0, done = 0, mins = 0;
+  for (let i = 0; i < 7; i++) {
+    const k = addDays(start, i);
+    const sc = k < (S.pet.since || today) ? [] : scheduledOn(k), dn = doneOn(k);
+    const past = k <= today;
+    const items = sc.map((h) => {
+      const r = dn[h.id];
+      if (past) {
+        per[h.id] = per[h.id] || { sched: 0, done: 0 };
+        if (k < today || r) { per[h.id].sched += 1; sched += 1; }
+        if (r) { per[h.id].done += 1; done += 1; if (r.level === 'min') mins += 1; }
+      }
+      return { id: h.id, st: r ? r.level : k < today ? 'miss' : 'pending' };
+    });
+    days.push({ k, items, saved: !!S.saved[k], future: !past });
+  }
+  const end = addDays(start, 7);
+  const focusMin = (S.focus || []).filter((f) => { const k = dayKey(new Date(f.at)); return k >= start && k < end; }).reduce((a, f) => a + f.min, 0);
+  const rescues = S.rescues.filter((r) => { const k = dayKey(new Date(r.at)); return k >= start && k < end; }).length;
+  return { start, days, per, sched, done, mins, pct: sched ? Math.round(done / sched * 100) : null, focusMin, rescues };
+}
+
+// Resumen de la semana (0 = esta, -1 = la pasada) con el hábito que más cuesta y un consejo.
+export function weekSummary(offset = 0) {
+  const start = addDays(weekStart(), offset * 7);
+  const w = weekStats(start);
+  const prev = weekStats(addDays(start, -7));
+  const hs = S.habits.filter((h) => !h.archived && w.per[h.id] && w.per[h.id].sched);
+  const rate = (h) => w.per[h.id].done / w.per[h.id].sched;
+  let best = null, hard = null;
+  hs.forEach((h) => {
+    if (!best || rate(h) > rate(best) || (rate(h) === rate(best) && w.per[h.id].done > w.per[best.id].done)) best = h;
+    if (!hard || rate(h) < rate(hard)) hard = h;
+  });
+  if (hard && best && hard.id === best.id) hard = null;
+  if (hard && rate(hard) >= 0.8) hard = null;
+  // el día de la semana con más hábitos sin hacer
+  const missByDay = w.days.map((d) => d.items.filter((x) => x.st === 'miss').length);
+  const worst = Math.max(...missByDay);
+  const worstDay = worst >= 2 ? w.days[missByDay.indexOf(worst)].k : null;
+  let tip;
+  if (!w.sched) tip = 'Esta semana no tenías hábitos programados. Elige uno chiquito para la próxima.';
+  else if (hard && w.per[hard.id].done === 0) tip = '"' + hard.title + '" no salió ninguna vez. Prueba solo con la versión mínima: ' + hard.min.toLowerCase() + '.';
+  else if (hard) tip = '"' + hard.title + '" es el que más te cuesta. ¿Lo pasamos a otra hora o a otro lugar? Ajustar no es rendirse.';
+  else if (worstDay) tip = 'Casi todo lo que faltó fue un mismo día. Ese día usa la versión mínima de todo.';
+  else if (w.pct >= 80) tip = 'Semana muy buena. Si te sientes listo, sube un hábito a su versión normal o épica.';
+  else tip = 'Vas avanzando. La meta no es la perfección: es no fallar dos días seguidos.';
+  return Object.assign(w, { prevPct: prev.pct, best, hard, worstDay, tip });
 }

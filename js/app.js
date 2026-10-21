@@ -2,6 +2,8 @@
 import { PETS, PET_ORDER, AREAS, LEVELS, FEELINGS, DAY_SHORT, DAY_LONG, MONTHS, PHRASES, STAGES, HABIT_IDEAS } from './data.js';
 import * as store from './store.js';
 import { Pet, petImg, scene, homeEmpty, petMeta, petPose, SCENE_W, SCENE_H } from './pet.js';
+import * as sound from './sound.js';
+import * as remind from './remind.js';
 
 const S = () => store.S;
 const app = document.getElementById('app');
@@ -10,6 +12,8 @@ const ui = {
   param: null,
   ob: null,          // borrador de la bienvenida
   rescue: null,      // estado del botón de rescate
+  focus: null,       // estado del modo foco
+  week: 0,           // semana que muestra el resumen (0 = esta, -1 = la pasada)
   draft: null        // borrador del editor de hábito
 };
 let pet = null;
@@ -30,7 +34,9 @@ const I = {
   lab: '<svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"/></svg>',
   chart: '<svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
   paw: '<svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="15" r="5"/><circle cx="5" cy="9" r="2"/><circle cx="19" cy="9" r="2"/><circle cx="9" cy="5" r="2"/><circle cx="15" cy="5" r="2"/></svg>',
-  user: '<svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg>'
+  user: '<svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg>',
+  focus: '<svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg>',
+  bell: '<svg aria-hidden="true" style="flex-shrink:0;margin-top:2px" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2F6B4F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21a2 2 0 0 0 4 0"/></svg>'
 };
 
 function greeting() {
@@ -72,6 +78,28 @@ function nav(on) {
 function fireflies() {
   return '<div class="fireflies" aria-hidden="true">' + [[40, 200, 0], [300, 240, 2], [210, 150, 4], [100, 120, 1], [340, 130, 3]].map(([x, y, d]) =>
     '<span style="left:' + x + 'px;top:' + y + 'px;animation-delay:' + d + 's;animation-duration:' + (7 + d * 0.6) + 's"></span>').join('') + '</div>';
+}
+
+// Adornos que la mascota gana al crecer: banderines (joven), luces (adulto), destellos (especial).
+function decor(i) {
+  let html = '';
+  if (i >= 1) {
+    const cols = ['#C4553A', '#F6C453', '#7FB069', '#8EC5E8', '#C9A0DC'];
+    const flags = Array.from({ length: 11 }, (_, n) => {
+      const x = 8 + n * 36, y = 14 + Math.sin(n / 10 * Math.PI) * 14;
+      return '<path d="M' + x + ' ' + y + 'l14 1-6 18z" fill="' + cols[n % 5] + '"/>';
+    }).join('');
+    html += '<svg class="deco bunting" viewBox="0 0 400 46" preserveAspectRatio="none" aria-hidden="true"><path d="M0 12Q200 44 400 12" fill="none" stroke="#7A5A3A" stroke-width="1.6"/>' + flags + '</svg>';
+  }
+  if (i >= 2) {
+    html += '<div class="deco lights" aria-hidden="true">' + Array.from({ length: 9 }, (_, n) =>
+      '<i style="left:' + (6 + n * 11) + '%;top:' + Math.round(Math.sin((n + 0.5) / 9 * Math.PI) * 22) + 'px;animation-delay:' + (n * 0.37).toFixed(2) + 's"></i>').join('') + '</div>';
+  }
+  if (i >= 3) {
+    html += '<div class="deco sparkles" aria-hidden="true">' + [[30, 52], [68, 46], [22, 70], [76, 66], [50, 40]].map(([x, y], n) =>
+      '<i style="left:' + x + '%;top:' + y + '%;animation-delay:' + (n * 0.6) + 's"></i>').join('') + '</div>';
+  }
+  return html;
 }
 
 // ---------- mascota compartida entre pantallas
@@ -183,7 +211,7 @@ function screenInicio() {
     '<main class="screen">' +
     '<section class="hero" data-hero>' +
     '<img class="scene" src="' + homeEmpty(s.pet.k) + '" alt="Hogar de ' + esc(s.pet.name) + '">' +
-    '<div class="shade"></div>' + fireflies() +
+    '<div class="shade"></div>' + fireflies() + decor(st.i) +
     '<div class="hello"><div class="who"><div class="small bold">' + todayLabel() + ' · ' + greeting() + '</div><h1 style="font-size:24px">Hola' + (s.user.name ? ', ' + esc(s.user.name) : '') + '</h1></div>' +
     '<div class="row" style="gap:6px"><span class="pill" title="Racha">' + I.flame + streak + '</span><span class="pill" title="Comodines">' + I.star + s.wildcards + '</span></div></div>' +
     '<div class="petbar"><span class="display" style="font-size:16px">' + esc(s.pet.name) + '</span><span class="muted small">' + st.label + ' · ' + nextTxt + '</span><span class="bar"><i style="width:' + Math.round(st.prog * 100) + '%"></i></span>' +
@@ -191,6 +219,7 @@ function screenInicio() {
     '</section>' +
     '<div class="pad stack" style="margin-top:14px">' +
     '<a class="btn red block" href="#/rescate" style="min-height:58px;font-size:20px">' + I.flameW + 'Estoy procrastinando</a>' +
+    '<a class="btn ghost block" href="#/foco" style="min-height:50px;font-size:17px">' + I.focus + 'Modo foco con ' + esc(s.pet.name) + '</a>' +
     (exc ? '<div class="card row" style="align-items:flex-start;gap:12px;padding:10px 14px">' + I.mail + '<div><div class="muted small bold">' + daysAgo(s.letter.at) + '</div><div style="font-style:italic;font-size:14px;line-height:1.4">"' + esc(exc) + '"</div></div></div>' : '') +
     '<div class="row between" style="padding:0 2px"><h2 style="font-size:19px">Hoy</h2><span class="muted bold">' + (today.length ? nDone + ' de ' + today.length + ' hechos' : '') + '</span></div>' +
     (today.length ? '<div class="stack" style="gap:8px">' + tasks + '</div>' :
@@ -203,6 +232,30 @@ function afterInicio() {
   const hero = app.querySelector('[data-hero]');
   const st = store.stage();
   mountPet(hero, { hero: true, below: 0.3, scale: st.scale, special: st.special });
+  // ¿creció desde la última vez? (la primera vez solo se anota la etapa)
+  const s = S();
+  if (s.stageSeen === null || s.stageSeen === undefined) { s.stageSeen = st.i; store.save(); }
+  else if (st.i > s.stageSeen) { s.stageSeen = st.i; store.save(); setTimeout(() => openGrow(st), 700); }
+  else if (!ui.weekShown && s.weekSeen !== store.weekStart() && store.weekSummary(-1).sched) {
+    ui.weekShown = true;
+    s.weekSeen = store.weekStart(); store.save();
+    setTimeout(() => openWeek(-1), 900);
+  }
+}
+
+function openGrow(st) {
+  const s = S();
+  sound.play('grow');
+  if (pet) pet.celebrate(PHRASES.grow);
+  sheet('<div class="stack" style="align-items:center;text-align:center;gap:12px">' +
+    '<div class="grow-badge">' + (st.i + 1) + '</div>' +
+    '<h2 style="font-size:24px">¡' + esc(s.pet.name) + ' creció!</h2>' +
+    '<div class="muted" style="font-size:15px;line-height:1.45">Ahora es <b>' + st.label.toLowerCase() + '</b>, después de ' + plural(st.days, 'día activo', 'días activos') + ' contigo.</div>' +
+    '<div class="card" style="width:100%;background:#E3F0D8;line-height:1.45"><b>Nuevo en su hogar:</b> ' + esc(st.gift) + '.</div>' +
+    (st.next ? '<div class="muted small">Próxima etapa: ' + st.next.label.toLowerCase() + ' en el día ' + st.next.from + '.</div>' : '') +
+    '<button class="btn block" data-sheet="ok">¡Bien!</button></div>', (w) => {
+    w.addEventListener('click', (e) => { if (e.target.closest('[data-sheet]')) closeSheet(); });
+  });
 }
 
 // ---------- Rescate
@@ -347,7 +400,130 @@ function screenPatrones() {
     '<main class="screen"><div class="topbar"><div><h1>Tus patrones</h1><div class="muted">Últimas 6 semanas</div></div></div>' +
     '<div class="pad stack"><div style="position:relative;height:104px;border-radius:22px;overflow:hidden;box-shadow:0 6px 16px rgba(38,58,46,.2)"><img src="' + scene('entreno', s.pet.k) + '" alt="' + esc(s.pet.name) + ' entrenando" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 68%;animation:kb 18s ease-in-out infinite alternate">' +
     '<div style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(24,44,34,.6),rgba(24,44,34,0) 70%)"></div><div style="position:absolute;left:14px;top:0;bottom:0;display:flex;flex-direction:column;justify-content:center;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.4);max-width:220px"><div class="display" style="font-size:18px">' + esc(s.pet.name) + ' entrena contigo</div><div class="small bold">Racha actual: ' + plural(store.streak(), 'día', 'días') + '</div></div></div>' +
-    body + resc + '</div></main>' + nav('patrones');
+    weekCard(ui.week) + body + resc + '</div></main>' + nav('patrones');
+}
+
+// ---------- Resumen semanal
+
+function weekCard(offset, inSheet) {
+  const w = store.weekSummary(offset);
+  const habits = S().habits.filter((h) => !h.archived);
+  const color = { min: '#F6C453', normal: '#7FB069', epic: '#2F6B4F', miss: '#E0D5BC', pending: '#fff' };
+  const cols = w.days.map((d) => {
+    const wd = store.parseDay(d.k).getDay();
+    const isToday = d.k === store.dayKey();
+    const dots = d.items.map((x) => '<i style="background:' + color[x.st] + (x.st === 'pending' ? ';border:2px solid #E0D5BC' : '') + '"></i>').join('');
+    return '<div class="wday' + (isToday ? ' today' : '') + (d.future ? ' future' : '') + '"><div class="dots2">' + (dots || '<span class="rest">·</span>') + '</div>' +
+      (d.saved ? '<span class="small" title="Salvado con comodín">⭐</span>' : '') + '<span class="small bold muted">' + DAY_SHORT[wd] + '</span></div>';
+  }).join('');
+  const range = (() => { const a = store.parseDay(w.start), b = store.parseDay(store.addDays(w.start, 6)); return a.getDate() + ' de ' + MONTHS[a.getMonth()] + ' al ' + b.getDate() + ' de ' + MONTHS[b.getMonth()]; })();
+  const diff = w.pct !== null && w.prevPct !== null ? w.pct - w.prevPct : null;
+  const trend = diff === null ? '' : diff > 0 ? '<span class="up">▲ ' + diff + ' pts</span>' : diff < 0 ? '<span class="down">▼ ' + (-diff) + ' pts</span>' : '<span class="muted">igual</span>';
+  const line = (label, h, bg, ink) => h ? '<div class="row" style="gap:8px;background:' + bg + ';border-radius:12px;padding:8px 10px"><span class="small bold" style="color:' + ink + ';min-width:96px">' + label + '</span><b style="font-size:14px">' + esc(h.title) + '</b><span class="muted small" style="margin-left:auto">' + w.per[h.id].done + '/' + w.per[h.id].sched + '</span></div>' : '';
+  return '<div class="card stack week"' + (inSheet ? ' style="box-shadow:none;padding:0;background:none"' : '') + '>' +
+    '<div class="row between"><div><b style="font-size:16px">' + (offset === 0 ? 'Esta semana' : offset === -1 ? 'Semana pasada' : 'Semana del ' + range) + '</b><div class="muted small">' + range + '</div></div>' +
+    (inSheet ? '' : '<div class="row" style="gap:4px"><button class="icon-btn small-btn" data-act="week" data-v="-1" aria-label="Semana anterior">‹</button><button class="icon-btn small-btn" data-act="week" data-v="1" aria-label="Semana siguiente"' + (offset >= 0 ? ' disabled' : '') + '>›</button></div>') + '</div>' +
+    '<div class="wgrid" role="img" aria-label="Hábitos de la semana por día">' + cols + '</div>' +
+    '<div class="grid3">' +
+    '<div class="stat"><div class="display">' + (w.pct === null ? '—' : w.pct + '%') + '</div><div class="small muted">cumplido ' + trend + '</div></div>' +
+    '<div class="stat"><div class="display">' + w.focusMin + '</div><div class="small muted">min de foco</div></div>' +
+    '<div class="stat"><div class="display">' + w.done + '</div><div class="small muted">' + (w.done === 1 ? 'hábito hecho' : 'hábitos hechos') + '</div></div></div>' +
+    line('Tu mejor hábito', w.best, '#E3F0D8', '#2F6B4F') + line('El que más cuesta', w.hard, '#FBE3DC', '#9A3F2A') +
+    '<div style="font-size:13px;line-height:1.45;background:#FFF6E5;border-radius:14px;padding:10px 12px"><b>Consejo:</b> ' + esc(w.tip) + '</div>' +
+    (habits.length ? '<div class="row small muted" style="gap:10px;flex-wrap:wrap"><span><i class="lg" style="background:#7FB069"></i>hecho</span><span><i class="lg" style="background:#F6C453"></i>mínima</span><span><i class="lg" style="background:#E0D5BC"></i>faltó</span></div>' : '') +
+    '</div>';
+}
+
+function openWeek(offset) {
+  sheet('<h2 style="font-size:22px">Tu resumen semanal</h2><div class="muted" style="margin:4px 0 12px">Así te fue. Sin juicio: es información para ajustar.</div>' + weekCard(offset, true) +
+    '<button class="btn block" style="margin-top:14px" data-sheet="ok">Vamos por esta semana</button>', (w) => {
+    w.addEventListener('click', (e) => { if (e.target.closest('[data-sheet]')) closeSheet(); });
+  });
+}
+
+// ---------- Modo foco
+
+const FOCUS_MIN = [15, 25, 45, 60];
+
+function screenFoco() {
+  const s = S();
+  const f = ui.focus || (ui.focus = { habitId: ui.param || null, min: 25, brk: 5, phase: 'work', running: false, paused: false, end: null, left: null, blocks: 0, done: false });
+  const h = f.habitId && store.habitById(f.habitId);
+  const area = h ? AREAS[h.area] : AREAS.estudio;
+  const total = (f.phase === 'work' ? f.min : f.brk) * 60;
+  const left = f.running ? Math.max(0, Math.round((f.end - Date.now()) / 1000)) : f.paused ? f.left : total;
+  const started = f.running || f.paused;
+  const k = store.dayKey();
+  const todays = store.scheduledOn(k);
+  const habitPick = started || f.done ? '' :
+    '<div class="field" style="color:#fff">¿En qué te vas a enfocar?<div class="row" style="gap:6px;flex-wrap:wrap">' +
+    '<button class="chip fchip' + (!f.habitId ? ' on' : '') + '" data-act="focus-habit" data-id="">Algo libre</button>' +
+    s.habits.filter((x) => !x.archived).sort((a, b) => (todays.includes(b) ? 1 : 0) - (todays.includes(a) ? 1 : 0)).map((x) =>
+      '<button class="chip fchip' + (f.habitId === x.id ? ' on' : '') + '" data-act="focus-habit" data-id="' + x.id + '">' + esc(x.title) + '</button>').join('') + '</div></div>' +
+    '<div class="field" style="color:#fff">¿Cuánto rato?<div class="row" style="gap:6px">' + FOCUS_MIN.map((m) =>
+      '<button class="chip fchip' + (f.min === m ? ' on' : '') + '" data-act="focus-min" data-v="' + m + '">' + m + ' min</button>').join('') + '</div></div>';
+  const label = f.done ? (f.phase === 'work' ? '¡Bloque terminado!' : 'Descanso terminado') : f.phase === 'break' ? 'Descanso' : f.running ? 'Enfocado' : f.paused ? 'En pausa' : 'Listo para partir';
+  const after = f.done ? (f.phase === 'work' ?
+    '<div class="stack" style="width:100%;gap:10px">' +
+    (h && !store.doneOn(k)[h.id] ? '<button class="btn block" data-act="focus-mark">Marcar "' + esc(h.title) + '" como hecho</button>' : '') +
+    '<button class="btn ghost block" data-act="focus-break">Descanso de ' + f.brk + ' min</button>' +
+    '<button class="btn link light" data-act="focus-again">Otro bloque de ' + f.min + ' min</button></div>' :
+    '<div class="stack" style="width:100%;gap:10px"><button class="btn block" data-act="focus-again">Otro bloque de ' + f.min + ' min</button><a class="btn link light" href="#/inicio">Terminar por hoy</a></div>') :
+    '<button class="btn block" data-act="focus-timer" style="max-width:280px">' + (f.running ? 'Pausar' : f.paused ? 'Seguir' : 'Empezar') + '</button>' +
+    (started ? '<button class="btn link light" data-act="focus-stop">Terminar ahora</button>' : '');
+  return '<div class="focus-bg" aria-hidden="true"><img src="' + scene(area.scene, s.pet.k) + '" alt=""></div>' +
+    '<main class="screen no-nav focus">' +
+    '<div class="topbar"><a class="icon-btn" href="#/inicio" aria-label="Cerrar">' + I.close + '</a><span class="chip" style="background:rgba(255,255,255,.9);color:' + area.ink + '">' + I.focus + ' Modo foco' + (f.blocks ? ' · ' + plural(f.blocks, 'bloque', 'bloques') : '') + '</span><span style="width:44px"></span></div>' +
+    '<div class="pad stack" style="align-items:center;text-align:center;gap:16px">' +
+    '<h1 style="font-size:24px;color:#fff;text-shadow:0 2px 6px rgba(0,0,0,.4)">' + (h ? esc(h.title) : esc(s.pet.name) + ' se enfoca contigo') + '</h1>' +
+    '<div class="timer glass"><svg class="ring" viewBox="0 0 230 230" aria-hidden="true"><circle cx="115" cy="115" r="104" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="12"/><circle data-ring cx="115" cy="115" r="104" fill="none" stroke="' + (f.phase === 'break' ? '#8EC5E8' : '#F6C453') + '" stroke-width="12" stroke-linecap="round" stroke-dasharray="653.5" stroke-dashoffset="' + (653.5 * left / total) + '"/></svg>' +
+    '<div class="num" data-time>' + fmt(left) + '</div><div class="small bold" data-tlabel>' + label + '</div></div>' +
+    (started || f.done ? '<div class="small bold" style="color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.5);max-width:300px">' + (f.phase === 'break' ? 'Levántate, toma agua y estira un poco.' : h ? 'Mínimo: ' + esc(h.min) + '. El celular, boca abajo.' : 'El celular, boca abajo. ' + esc(s.pet.name) + ' te cuida el foco.') + '</div>' : '') +
+    habitPick + after +
+    '</div></main>';
+}
+
+function afterFoco() {
+  if (ui.focus && ui.focus.running) tickFocus();
+}
+
+let wake = null;
+async function keepAwake(on) {
+  try {
+    if (on && 'wakeLock' in navigator && !wake) { wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => { wake = null; }); }
+    if (!on && wake) { await wake.release(); wake = null; }
+  } catch (e) { wake = null; }
+}
+
+function tickFocus() {
+  clearInterval(ui.ft);
+  ui.ft = setInterval(() => {
+    const f = ui.focus;
+    if (!f || !f.running) { clearInterval(ui.ft); return; }
+    const total = (f.phase === 'work' ? f.min : f.brk) * 60;
+    const left = Math.max(0, Math.round((f.end - Date.now()) / 1000));
+    if (ui.route === 'foco') {
+      const t = app.querySelector('[data-time]'), ring = app.querySelector('[data-ring]');
+      if (t) t.textContent = fmt(left);
+      if (ring) ring.setAttribute('stroke-dashoffset', 653.5 * left / total);
+    }
+    if (left <= 0) finishFocus();
+  }, 500);
+}
+
+function finishFocus() {
+  const f = ui.focus;
+  clearInterval(ui.ft);
+  f.running = false; f.paused = false; f.done = true;
+  keepAwake(false);
+  sound.play('bell');
+  if (f.phase === 'work') {
+    f.blocks += 1;
+    S().focus.push({ at: new Date().toISOString(), min: f.min, habitId: f.habitId || null });
+    store.save();
+    toast(PHRASES.focusDone);
+  }
+  if (ui.route === 'foco') render();
 }
 
 // ---------- Mascota
@@ -359,9 +535,9 @@ function screenMascota() {
   return backdrop('casa') +
     '<main class="screen"><div class="topbar"><div><h1>' + esc(s.pet.name) + '</h1><div class="muted">' + P.label + ' · ' + st.label + '</div></div></div>' +
     '<div class="pad stack">' +
-    '<section class="hero" data-hero style="height:380px;border-radius:26px"><img class="scene" src="' + homeEmpty(s.pet.k) + '" alt="Hogar de ' + esc(s.pet.name) + '">' + fireflies() + '</section>' +
+    '<section class="hero" data-hero style="height:380px;border-radius:26px"><img class="scene" src="' + homeEmpty(s.pet.k) + '" alt="Hogar de ' + esc(s.pet.name) + '">' + fireflies() + decor(st.i) + '</section>' +
     '<div class="card stack" style="gap:8px"><div class="row between"><b>Crecimiento</b><span class="muted small">' + plural(st.days, 'día activo', 'días activos') + '</span></div><span class="bar"><i style="width:' + Math.round(st.prog * 100) + '%"></i></span><div class="muted small">' + nextTxt + ' Nunca muere: si te alejas, solo se cansa y te espera.</div>' +
-    '<div class="grid4" style="text-align:center;margin-top:4px">' + STAGES.map((x) => '<div style="background:' + (x.label === st.label ? '#E3F0D8' : '#FFF6E5') + ';border-radius:12px;padding:6px 2px"><div class="small bold">' + x.label + '</div><div class="small muted">día ' + x.from + '</div></div>').join('') + '</div></div>' +
+    '<div class="stack" style="gap:6px;margin-top:4px">' + STAGES.map((x, i) => '<div class="stage-row' + (i === st.i ? ' now' : i < st.i ? ' got' : '') + '"><span class="n">' + (i <= st.i ? '✓' : i + 1) + '</span><div style="flex:1"><div class="small bold">' + x.label + ' <span class="muted">· día ' + x.from + '</span></div><div class="small muted">' + x.gift + '</div></div></div>').join('') + '</div></div>' +
     '<div class="grid4 places">' + places.map(([p, l]) => '<div class="place"><img src="' + scene(p, s.pet.k) + '" alt="' + l + ' de ' + esc(s.pet.name) + '"><div>' + l + '</div></div>').join('') + '</div>' +
     '<label class="field">Nombre<input class="input" data-model="pet.name" maxlength="16" value="' + esc(s.pet.name) + '"></label>' +
     '<div class="bold" style="font-size:14px">Cambiar de compañero</div><div class="muted small" style="margin-top:-6px">Tu progreso se mantiene.</div>' +
@@ -391,12 +567,22 @@ function screenYo() {
     '<h2 style="font-size:19px;margin-top:6px">Mis hábitos</h2>' +
     habits.map((h) => '<a class="card row between" style="text-decoration:none;color:inherit" href="#/habito/' + h.id + '"><div><b>' + esc(h.title) + '</b><div class="muted small">' + h.days.slice().sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7)).map((d) => DAY_SHORT[d]).join(' ') + ' · ' + esc(h.time) + (h.place ? ' · ' + esc(h.place) : '') + '</div></div><span class="muted bold">Editar</span></a>').join('') +
     '<a class="btn ghost block" href="#/habito/nuevo">Agregar hábito</a>' +
+    '<h2 style="font-size:19px;margin-top:6px">Recordatorios y sonidos</h2>' +
+    '<div class="card stack" style="gap:10px"><div class="row" style="align-items:flex-start;gap:10px">' + I.bell + '<div style="line-height:1.45;font-size:14px"><b>Avisos a la hora de cada hábito.</b> Se agregan al calendario de tu teléfono con una alerta, así ' + esc(s.pet.name) + ' te avisa aunque la app esté cerrada.</div></div>' +
+    '<button class="btn block" data-act="remind-cal">' + (s.settings && s.settings.calAt ? 'Actualizar mi calendario' : 'Agregar a mi calendario') + '</button>' +
+    '<div class="muted small" style="line-height:1.4">' + (s.settings && s.settings.calAt ? 'Los agregaste el ' + new Date(s.settings.calAt).getDate() + ' de ' + MONTHS[new Date(s.settings.calAt).getMonth()] + '. Si cambias tus hábitos, borra los eventos antiguos de "Hábitat" y agrégalos de nuevo. ' : '') + 'En iPhone se abre un archivo: toca "Agregar todo".</div></div>' +
+    toggleRow('Avisar con la app abierta', 'Si la app está abierta a la hora de un hábito, ' + esc(s.pet.name) + ' te lo dice y llega una notificación.', s.settings && s.settings.remind, 'remind-toggle') +
+    toggleRow('Sonidos', 'La voz de ' + esc(s.pet.name) + ' al tocarla y sonidos al cumplir. En iPhone no suenan con el modo silencio.', sound.soundOn(), 'toggle-sound') +
     '<h2 style="font-size:19px;margin-top:6px">Mis datos</h2>' +
     '<label class="field">Tu nombre<input class="input" data-model="user.name" maxlength="24" value="' + esc(s.user.name) + '"></label>' +
     '<div class="card muted" style="line-height:1.45">Por ahora tus datos se guardan solo en este teléfono. Haz una copia de vez en cuando.</div>' +
     '<div class="grid2"><button class="btn ghost" data-act="export">Copia de seguridad</button><label class="btn ghost" style="cursor:pointer">Restaurar<input type="file" accept="application/json" data-act-change="import" hidden></label></div>' +
     '<button class="btn link" style="color:#9A3F2A" data-act="wipe">Borrar todo y empezar de cero</button>' +
     '</div></main>' + nav('yo');
+}
+
+function toggleRow(title, desc, on, act) {
+  return '<button class="card row toggle-row" data-act="' + act + '" role="switch" aria-checked="' + !!on + '"><div style="flex:1;text-align:left"><b style="font-size:15px">' + title + '</b><div class="muted small" style="line-height:1.4;margin-top:2px">' + desc + '</div></div><span class="switch' + (on ? ' on' : '') + '"><i></i></span></button>';
 }
 
 // ---------- Editor de hábito
@@ -508,6 +694,7 @@ const SCREENS = {
   mascota: [screenMascota, afterMascota],
   yo: [screenYo],
   habito: [screenHabito],
+  foco: [screenFoco, afterFoco],
   bienvenida: [screenBienvenida, afterBienvenida]
 };
 
@@ -536,6 +723,8 @@ window.addEventListener('hashchange', () => {
   closeSheet();
   if (ui.route === 'rescate' && prev !== 'rescate') ui.rescue = null;
   if (ui.route === 'rescate' && ui.pendingRescue) { ui.rescue = ui.pendingRescue; ui.pendingRescue = null; }
+  if (ui.route === 'foco' && prev !== 'foco' && ui.focus && !ui.focus.running && !ui.focus.paused) ui.focus = null;
+  if (ui.route === 'patrones' && prev !== 'patrones') ui.week = 0;
   render();
   window.scrollTo(0, 0);
 });
@@ -700,6 +889,69 @@ const ACT = {
     store.save(); ui.draft = null;
     location.hash = '#/yo';
   },
+  // resumen semanal
+  week(el) { ui.week = Math.min(0, ui.week + Number(el.dataset.v)); render(true); },
+  // modo foco
+  'focus-habit'(el) { ui.focus.habitId = el.dataset.id || null; render(true); },
+  'focus-min'(el) { ui.focus.min = Number(el.dataset.v); render(true); },
+  'focus-timer'() {
+    const f = ui.focus;
+    if (f.running) {
+      f.left = Math.max(0, Math.round((f.end - Date.now()) / 1000));
+      f.running = false; f.paused = true;
+      clearInterval(ui.ft); keepAwake(false);
+    } else {
+      const total = (f.phase === 'work' ? f.min : f.brk) * 60;
+      const resume = f.paused;
+      f.end = Date.now() + (resume ? f.left : total) * 1000;
+      if (!resume && f.phase === 'work') f.startedAt = Date.now();
+      f.running = true; f.paused = false;
+      sound.play('pop'); keepAwake(true);
+      if (!resume) toast(PHRASES.focusStart);
+    }
+    render(true);
+    if (f.running) tickFocus();
+  },
+  'focus-stop'() {
+    const f = ui.focus;
+    clearInterval(ui.ft); keepAwake(false);
+    if (f.phase === 'work' && f.startedAt) {
+      const total = f.min * 60;
+      const left = f.running ? Math.max(0, Math.round((f.end - Date.now()) / 1000)) : f.left;
+      const min = Math.floor((total - left) / 60);
+      if (min >= 1) { S().focus.push({ at: new Date().toISOString(), min, habitId: f.habitId || null }); store.save(); toast('Guardé ' + plural(min, 'minuto', 'minutos') + ' de foco'); }
+    }
+    ui.focus = null;
+    location.hash = '#/inicio';
+  },
+  'focus-break'() {
+    const f = ui.focus;
+    f.phase = 'break'; f.done = false; f.paused = false; f.running = true; f.end = Date.now() + f.brk * 60000;
+    keepAwake(true); render(true); tickFocus();
+  },
+  'focus-again'() {
+    const f = ui.focus;
+    f.phase = 'work'; f.done = false; f.paused = false; f.running = true; f.startedAt = Date.now(); f.end = Date.now() + f.min * 60000;
+    sound.play('pop'); keepAwake(true); render(true); tickFocus();
+  },
+  'focus-mark'() { openLevels(ui.focus.habitId); },
+  // ajustes
+  'toggle-sound'() { sound.setSound(!sound.soundOn()); render(true); },
+  'remind-cal'() {
+    if (!S().habits.filter((h) => !h.archived).length) { toast('Primero agrega un hábito'); return; }
+    remind.downloadICS();
+    S().settings.calAt = new Date().toISOString(); store.save();
+    setTimeout(() => render(true), 600);
+  },
+  async 'remind-toggle'() {
+    const st = S().settings;
+    if (st.remind) { st.remind = false; store.save(); render(true); return; }
+    const r = await remind.askNotify();
+    st.remind = r === 'granted';
+    store.save();
+    if (r !== 'granted') toast(r === 'unsupported' ? 'Para avisos, instala la app en tu pantalla de inicio' : 'Sin permiso no puedo avisarte. Usa el calendario.');
+    render(true);
+  },
   // bienvenida
   'ob-next'() {
     const ob = ui.ob;
@@ -773,6 +1025,7 @@ function openTask(id) {
     '<div class="card" style="background:#FBEBC4;line-height:1.45"><b>Versión mínima:</b> ' + esc(h.min) + '. Si hoy cuesta, con eso basta.</div>' +
     (done ? '<div class="chip" style="background:#E3F0D8;color:#2F6B4F;align-self:flex-start">Hecho hoy: versión ' + LEVELS[done.level].label.toLowerCase() + '</div>' :
       '<button class="btn block" data-sheet="done">Ya lo hice</button>') +
+    '<a class="btn ghost block" href="#/foco/' + h.id + '">' + I.focus + 'Modo foco con esta tarea</a>' +
     '<button class="btn red block" data-sheet="rescue">Me cuesta empezar</button>' +
     '<a class="btn link" href="#/habito/' + h.id + '">Editar hábito</a></div>', (w) => {
     w.addEventListener('click', (e) => {
@@ -792,6 +1045,7 @@ function openLevels(id) {
       const b = e.target.closest('[data-level]');
       if (!b) return;
       store.mark(id, b.dataset.level);
+      sound.play('ding');
       closeSheet();
       if (ui.route !== 'inicio') location.hash = '#/inicio';
       else { render(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }
@@ -855,6 +1109,13 @@ function boot() {
   }
   parseRoute();
   render();
+  remind.startWatch((h) => {
+    if (!pet || !pet.el.isConnected) return;
+    const p = PHRASES.due[Math.floor(Math.random() * PHRASES.due.length)].replace('{h}', h.title);
+    pet.act('hop');
+    pet.say(p, 5000);
+    sound.voice(S().pet.k, 'happy');
+  });
 }
 boot();
 
