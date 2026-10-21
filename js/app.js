@@ -4,6 +4,7 @@ import * as store from './store.js';
 import { Pet, petImg, scene, homeEmpty, petMeta, petPose, SCENE_W, SCENE_H } from './pet.js';
 import * as sound from './sound.js';
 import * as remind from './remind.js';
+import * as cloud from './cloud.js';
 
 const S = () => store.S;
 const app = document.getElementById('app');
@@ -575,10 +576,56 @@ function screenYo() {
     toggleRow('Sonidos', 'La voz de ' + esc(s.pet.name) + ' al tocarla y sonidos al cumplir. En iPhone no suenan con el modo silencio.', sound.soundOn(), 'toggle-sound') +
     '<h2 style="font-size:19px;margin-top:6px">Mis datos</h2>' +
     '<label class="field">Tu nombre<input class="input" data-model="user.name" maxlength="24" value="' + esc(s.user.name) + '"></label>' +
-    '<div class="card muted" style="line-height:1.45">Por ahora tus datos se guardan solo en este teléfono. Haz una copia de vez en cuando.</div>' +
+    syncCard() +
     '<div class="grid2"><button class="btn ghost" data-act="export">Copia de seguridad</button><label class="btn ghost" style="cursor:pointer">Restaurar<input type="file" accept="application/json" data-act-change="import" hidden></label></div>' +
     '<button class="btn link" style="color:#9A3F2A" data-act="wipe">Borrar todo y empezar de cero</button>' +
     '</div></main>' + nav('yo');
+}
+
+function syncLine() {
+  const st = cloud.status;
+  if (st.state === 'syncing') return 'Sincronizando…';
+  if (st.state === 'error') return '⚠️ ' + esc(st.error || 'No se pudo sincronizar') + ' Tus cambios quedan guardados aquí y se suben después.';
+  if (st.at) return 'Sincronizado a las ' + st.at.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+  return 'Se sincroniza solo cada vez que cambias algo.';
+}
+function syncCard() {
+  const u = cloud.user();
+  if (!u) {
+    return '<div class="card stack" style="gap:10px"><div style="line-height:1.45;font-size:14px"><b>Usa Hábitat en el celular y en el computador.</b> Inicia sesión en los dos con la misma cuenta y lo que hagas en uno aparece en el otro. Puedes usar la misma cuenta del macrociclo.</div>' +
+      '<button class="btn block" data-act="login">Iniciar sesión</button></div>';
+  }
+  return '<div class="card stack" style="gap:8px"><div class="row between"><div style="min-width:0"><b style="font-size:15px">☁️ Sincronizado entre dispositivos</b><div class="muted small" style="overflow-wrap:anywhere">' + esc(u) + '</div></div></div>' +
+    '<div class="muted small" data-sync style="line-height:1.4">' + syncLine() + '</div>' +
+    '<div class="grid2"><button class="btn ghost" style="min-height:44px;font-size:15px" data-act="sync-now">Sincronizar ahora</button><button class="btn ghost" style="min-height:44px;font-size:15px" data-act="logout">Cerrar sesión</button></div></div>';
+}
+
+function openLogin() {
+  sheet('<h2 style="font-size:21px">Iniciar sesión</h2><div class="muted" style="margin:4px 0 12px;line-height:1.4">Usa el mismo correo y contraseña en todos tus dispositivos. Si ya tienes cuenta en tu app del macrociclo, sirve la misma.</div>' +
+    '<div class="stack" style="gap:10px"><input class="input" id="lg-email" type="email" autocomplete="email" placeholder="Tu correo" value="' + esc(localStorage.getItem('habitat.lastEmail') || '') + '">' +
+    '<input class="input" id="lg-pass" type="password" autocomplete="current-password" placeholder="Contraseña (mínimo 6 caracteres)">' +
+    '<div class="small bold" id="lg-msg" style="color:#9A3F2A;min-height:18px"></div>' +
+    '<button class="btn block" data-lg="in">Entrar</button><button class="btn ghost block" data-lg="up">Crear cuenta nueva</button><button class="btn link" data-lg="forgot">Olvidé mi contraseña</button></div>', (w) => {
+    const msg = (t, ok) => { const m = w.querySelector('#lg-msg'); m.textContent = t; m.style.color = ok ? '#2F6B4F' : '#9A3F2A'; };
+    w.addEventListener('click', async (e) => {
+      const b = e.target.closest('[data-lg]');
+      if (!b || b.disabled) return;
+      const email = w.querySelector('#lg-email').value.trim(), pass = w.querySelector('#lg-pass').value;
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { msg('Escribe un correo válido.'); return; }
+      try { localStorage.setItem('habitat.lastEmail', email); } catch (er) { /* sin almacenamiento */ }
+      if (b.dataset.lg === 'forgot') { const r = await cloud.recover(email); msg(r.ok ? 'Te mandamos un correo para crear una contraseña nueva.' : r.msg, r.ok); return; }
+      if (pass.length < 6) { msg('La contraseña debe tener al menos 6 caracteres.'); return; }
+      b.disabled = true; msg('Conectando…', true);
+      const r = b.dataset.lg === 'in' ? await cloud.signIn(email, pass) : await cloud.signUp(email, pass);
+      b.disabled = false;
+      if (!r.ok) { msg(r.msg); return; }
+      if (r.confirm) { msg('Te mandamos un correo para confirmar tu cuenta. Confírmala y luego toca Entrar.', true); return; }
+      closeSheet();
+      toast(cloud.status.state === 'error' ? 'Sesión iniciada, pero no se pudo sincronizar' : 'Listo: tus datos están sincronizados');
+      if (S().onboarded && ui.route === 'bienvenida') { ui.ob = null; location.hash = '#/inicio'; }
+      parseRoute(); render(true);
+    });
+  });
 }
 
 function toggleRow(title, desc, on, act) {
@@ -634,7 +681,7 @@ function screenBienvenida() {
       '<img src="' + petImg('zorro') + '" alt="" style="height:160px">' +
       '<h1 style="font-size:26px;line-height:1.2">Deja de postergar, de a poquito y acompañado</h1>' +
       '<div class="muted" style="line-height:1.5;font-size:15px">Hábitat te ayuda a empezar cuando cuesta, aprende de tus patrones y hace crecer a tu mascota cada vez que cumples.</div>' +
-      next('Empezar') + '</div>';
+      next('Empezar') + '<button class="btn link" data-act="login">¿Ya usas Hábitat en otro dispositivo? Inicia sesión</button></div>';
   } else if (ob.step === 1) {
     body = '<h1 style="font-size:26px">¿Cómo te llamas?</h1><div class="muted">Así te saluda tu mascota.</div>' +
       '<input class="input" data-model="ob.name" value="' + esc(ob.name) + '" maxlength="24" placeholder="Tu nombre" autocomplete="given-name">' + next();
@@ -935,6 +982,13 @@ const ACT = {
     sound.play('pop'); keepAwake(true); render(true); tickFocus();
   },
   'focus-mark'() { openLevels(ui.focus.habitId); },
+  // sincronización
+  login() { openLogin(); },
+  'sync-now'() { cloud.sync(); },
+  logout() {
+    if (!confirm('¿Cerrar sesión? Tus datos se quedan en este dispositivo, pero dejan de sincronizarse.')) return;
+    cloud.signOut(); render(true);
+  },
   // ajustes
   'toggle-sound'() { sound.setSound(!sound.soundOn()); render(true); },
   'remind-cal'() {
@@ -1109,6 +1163,13 @@ function boot() {
   }
   parseRoute();
   render();
+  cloud.start((what) => {
+    if (what === 'status') { const el = app.querySelector('[data-sync]'); if (el) el.innerHTML = syncLine(); return; }
+    // llegaron datos de otro dispositivo: redibujar, salvo que estés escribiendo o con una hoja abierta
+    const busy = document.querySelector('.sheet-wrap') || (document.activeElement && /INPUT|TEXTAREA/.test(document.activeElement.tagName));
+    if (S().onboarded && ui.route === 'bienvenida') { ui.ob = null; location.hash = '#/inicio'; return; }
+    if (!busy && ui.route !== 'foco' && ui.route !== 'rescate') render(true);
+  });
   remind.startWatch((h) => {
     if (!pet || !pet.el.isConnected) return;
     const p = PHRASES.due[Math.floor(Math.random() * PHRASES.due.length)].replace('{h}', h.title);

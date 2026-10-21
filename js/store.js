@@ -58,8 +58,14 @@ function load() {
   return blank();
 }
 
-export function save() {
+// Quien quiera enterarse de cada cambio (la sincronización con la nube) se anota aquí.
+const listeners = [];
+export function onSave(fn) { listeners.push(fn); }
+
+export function save(silent) {
+  if (!silent) S.updatedAt = Date.now();
   try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* lleno o bloqueado */ }
+  if (!silent) listeners.forEach((fn) => fn());
 }
 
 export function reset() {
@@ -67,9 +73,9 @@ export function reset() {
   save();
 }
 
-export function replaceAll(data) {
+export function replaceAll(data, fromCloud) {
   S = Object.assign(blank(), data);
-  save();
+  save(fromCloud);
 }
 
 export function blankHabit(idea) {
@@ -116,6 +122,9 @@ export function unmark(habitId, k = dayKey()) {
     if (S.log[k][habitId].level === 'epic' && S.wildcards > 0) S.wildcards -= 1;
     delete S.log[k][habitId];
     if (!Object.keys(S.log[k]).length) delete S.log[k];
+    // marca de borrado, para que otro dispositivo no lo vuelva a traer al sincronizar
+    S.removed = S.removed || {};
+    S.removed[k + '|' + habitId] = new Date().toISOString();
     save();
   }
 }
